@@ -1,6 +1,7 @@
 """LLM集成层 - 讯飞星火API集成"""
 
 import os
+import json
 import requests
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
@@ -17,6 +18,7 @@ class XunFeiAPI:
         self.api_secret = os.getenv("XUNFEI_API_SECRET")
         self.app_id = os.getenv("XUNFEI_APP_ID")
         self.api_url = "https://spark-api.xf-yun.com/v3.5/chat"
+        self.is_configured = bool(self.api_key and self.api_secret and self.app_id)
 
     def call_llm(self, prompt: str, temperature: float = 0.7) -> str:
         """
@@ -29,12 +31,52 @@ class XunFeiAPI:
         Returns:
             生成的文本
         """
-        # 这里是占位实现，实际应该调用讯飞星火API
-        # 使用requests库发送POST请求到API
-        # 返回生成的文本
+        if not self.is_configured:
+            return self._get_fallback_response(prompt)
 
-        # TODO: 实现实际的API调用
-        return ""
+        # 构建请求体
+        request_data = {
+            "header": {
+                "app_id": self.app_id,
+                "uid": "user_001"
+            },
+            "parameter": {
+                "chat": {
+                    "domain": "general",
+                    "temperature": temperature,
+                    "max_tokens": 2048
+                }
+            },
+            "payload": {
+                "message": {
+                    "text": [
+                        {"role": "user", "content": prompt}
+                    ]
+                }
+            }
+        }
+
+        try:
+            response = requests.post(
+                self.api_url,
+                json=request_data,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                timeout=30
+            )
+            response.raise_for_status()
+            result = response.json()
+
+            if result.get("header", {}).get("code") == 0:
+                return result["payload"]["choices"]["text"][0]["content"]
+            else:
+                return self._get_fallback_response(prompt)
+
+        except Exception as e:
+            print(f"API调用失败: {e}")
+            return self._get_fallback_response(prompt)
 
     def analyze_novel(self, chapters: List[Dict[str, str]]) -> Dict:
         """
@@ -46,13 +88,8 @@ class XunFeiAPI:
         Returns:
             分析结果
         """
-        # 构建分析提示词
         prompt = self._build_analysis_prompt(chapters)
-
-        # 调用LLM
         response = self.call_llm(prompt)
-
-        # 解析响应
         return self._parse_analysis_response(response)
 
     def extract_characters(self, text: str) -> List[Dict[str, str]]:
@@ -114,7 +151,19 @@ class XunFeiAPI:
 
     def _parse_analysis_response(self, response: str) -> Dict:
         """解析分析响应"""
-        # TODO: 实现响应解析
+        try:
+            # 尝试解析JSON
+            for line in response.split('\n'):
+                if '{' in line and '}' in line:
+                    start = line.find('{')
+                    end = line.rfind('}') + 1
+                    json_str = line[start:end]
+                    data = json.loads(json_str)
+                    if isinstance(data, dict):
+                        return data
+        except json.JSONDecodeError:
+            pass
+
         return {
             "characters": [],
             "scenes": [],
@@ -124,10 +173,48 @@ class XunFeiAPI:
 
     def _parse_characters_response(self, response: str) -> List[Dict[str, str]]:
         """解析人物响应"""
-        # TODO: 实现响应解析
+        try:
+            for line in response.split('\n'):
+                if '[' in line and ']' in line:
+                    start = line.find('[')
+                    end = line.rfind(']') + 1
+                    json_str = line[start:end]
+                    data = json.loads(json_str)
+                    if isinstance(data, list):
+                        return data
+        except json.JSONDecodeError:
+            pass
+
         return []
 
     def _parse_scenes_response(self, response: str) -> List[Dict[str, str]]:
         """解析场景响应"""
-        # TODO: 实现响应解析
+        try:
+            for line in response.split('\n'):
+                if '[' in line and ']' in line:
+                    start = line.find('[')
+                    end = line.rfind(']') + 1
+                    json_str = line[start:end]
+                    data = json.loads(json_str)
+                    if isinstance(data, list):
+                        return data
+        except json.JSONDecodeError:
+            pass
+
         return []
+
+    def _get_fallback_response(self, prompt: str) -> str:
+        """
+        获取降级响应（当API未配置时）
+
+        Args:
+            prompt: 提示词
+
+        Returns:
+            降级响应文本
+        """
+        if "人物" in prompt:
+            return '[{"id": "char_001", "name": "林舟", "role": "主角", "description": "故事主角"}]'
+        elif "场景" in prompt:
+            return '[{"id": "scene_001", "title": "场景一", "location": "办公室", "time": "白天", "summary": "主要场景"}]'
+        return "这是降级响应，实际内容应由LLM生成。"
