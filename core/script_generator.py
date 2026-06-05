@@ -7,9 +7,14 @@ from datetime import datetime
 class ScriptGenerator:
     """剧本生成器类"""
 
-    def __init__(self):
-        """初始化剧本生成器"""
-        pass
+    def __init__(self, llm_api=None):
+        """
+        初始化剧本生成器
+
+        Args:
+            llm_api: LLM API 实例，用于智能生成
+        """
+        self.llm_api = llm_api
 
     def generate_scenes(self, chapters: List[Dict[str, str]], analysis: Dict) -> List[Dict[str, str]]:
         """
@@ -26,11 +31,9 @@ class ScriptGenerator:
         scene_id = 1
 
         for chapter in chapters:
-            # 从分析结果中获取相关场景
             chapter_scenes = [s for s in analysis.get('scenes', []) if s.get('chapter_ref') == chapter['title']]
 
             if not chapter_scenes:
-                # 如果分析结果中没有场景，创建默认场景
                 chapter_scenes = [{
                     "id": f"scene_{scene_id:03d}",
                     "title": f"{chapter['title']} - 场景1",
@@ -59,8 +62,6 @@ class ScriptGenerator:
             情节节点列表
         """
         beats = []
-
-        # 默认情节节点类型
         beat_types = ['action', 'dialogue', 'narration']
 
         for i, beat_type in enumerate(beat_types):
@@ -88,7 +89,6 @@ class ScriptGenerator:
         Returns:
             完整剧本对象
         """
-        # 获取元信息
         metadata = {
             "version": "1.0",
             "generated_by": "AI Tool v1.0",
@@ -97,7 +97,6 @@ class ScriptGenerator:
             "llm_model": "qwen3.6-35b-a3b"
         }
 
-        # 获取来源信息
         source = {
             "type": "novel",
             "title": "未知标题",
@@ -106,13 +105,10 @@ class ScriptGenerator:
             "chapters": [c['title'] for c in chapters]
         }
 
-        # 获取人物列表
         characters = analysis.get('characters', [])
 
-        # 获取场景列表
         scenes = self.generate_scenes(chapters, analysis)
 
-        # 构建剧本对象
         script = {
             "metadata": metadata,
             "source": source,
@@ -122,7 +118,6 @@ class ScriptGenerator:
             "notes": []
         }
 
-        # 为每个场景添加情节节点
         for scene in scenes:
             scene['beats'] = self.create_beats(scene)
             script['beats'].extend(scene['beats'])
