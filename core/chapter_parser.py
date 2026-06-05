@@ -1,7 +1,16 @@
-"""章节解析器 - 解析小说文本中的章节结构"""
+"""章节解析器 - 解析小说文本中的章节结构
+
+使用 txt_to_epub 库进行智能章节解析，正则表达式作为降级策略。
+"""
 
 from typing import List, Dict, Optional
 import re
+
+try:
+    from txt_to_epub.parser import parse_chapters_from_content
+    TXT_TO_EPUB_AVAILABLE = True
+except ImportError:
+    TXT_TO_EPUB_AVAILABLE = False
 
 
 class ChapterParser:
@@ -9,11 +18,11 @@ class ChapterParser:
 
     def __init__(self):
         """初始化章节解析器"""
-        # 章节标题模式：第...章/篇/回/节/集
-        self.chapter_pattern = r'第[零一二三四五六七八九十百千0-9]+[章篇回节集]'
-        # 序言/后记模式
-        self.preface_pattern = r'序[章言言]'
-        self.afterword_pattern = r'后[记语]'
+        self.chapter_patterns = [
+            r'第[零一二三四五六七八九十百千0-9]+[章篇回节集]',  # 第一章、第1章
+            r'序[章言言]',  # 序章、序言
+            r'后[记语]',  # 后记、后语
+        ]
 
     def parse_chapters(self, text: str) -> List[Dict[str, str]]:
         """
@@ -24,6 +33,49 @@ class ChapterParser:
 
         Returns:
             章节列表，每个元素为 dict，包含 title 和 content
+        """
+        # 首先尝试使用 txt_to_epub 库
+        if TXT_TO_EPUB_AVAILABLE and len(text) > 100:
+            try:
+                chapters = self._parse_with_txt_to_epub(text)
+                if chapters:
+                    return chapters
+            except Exception as e:
+                print(f"txt_to_epub 解析失败，使用降级策略: {e}")
+
+        # 降级策略：使用正则表达式
+        return self._parse_with_regex(text)
+
+    def _parse_with_txt_to_epub(self, text: str) -> List[Dict[str, str]]:
+        """
+        使用 txt_to_epub 库解析章节
+
+        Args:
+            text: 小说文本内容
+
+        Returns:
+            章节列表
+        """
+        chapters = parse_chapters_from_content(text, language='chinese')
+
+        result = []
+        for chap in chapters:
+            result.append({
+                "title": chap.title,
+                "content": chap.content.strip()
+            })
+
+        return result
+
+    def _parse_with_regex(self, text: str) -> List[Dict[str, str]]:
+        """
+        使用正则表达式解析章节（降级策略）
+
+        Args:
+            text: 小说文本内容
+
+        Returns:
+            章节列表
         """
         chapters = []
         chapters_with_titles = self.detect_chapter_titles(text)
@@ -62,7 +114,6 @@ class ChapterParser:
         """
         titles = []
 
-        # 查找所有章节标题匹配
         for match in re.finditer(self.chapter_pattern, text):
             position = match.start()
             full_title = self._extract_full_title(text, position)
@@ -88,11 +139,9 @@ class ChapterParser:
         title = match.group(0)
         position = start_pos + match.end()
 
-        # 跳过后续的空白字符
         while position < len(text) and text[position] in ' \t':
             position += 1
 
-        # 提取标题行的剩余部分（直到换行符）
         line_end = text.find('\n', position)
         if line_end == -1:
             line_end = len(text)
@@ -115,22 +164,9 @@ class ChapterParser:
         if not titles:
             return titles
 
-        filtered = [titles[0]]
-
-        for i in range(1, len(titles)):
-            current_title, _ = titles[i]
-            # 检查当前标题是否是前一个标题的子标题
-            # 如果当前标题不以"第"开头，或者数字小于等于前一个，则跳过
-            if not re.match(r'第[零一二三四五六七八九十百千0-9]+', current_title):
-                # 非章节标题（如"第二节"）需要检查
-                # 如果它不包含"第X章"模式，则跳过
-                if not any(re.match(r'第.*章', t[0]) for t in filtered[-1:]):
-                    continue
-            filtered.append(titles[i])
-
-        # 再次过滤：只保留章节标题（带"第...章"的）
+        # 只保留章节标题（带"第...章"的）
         result = []
-        for title, pos in filtered:
+        for title, pos in titles:
             if re.match(r'第[零一二三四五六七八九十百千0-9]+章', title):
                 result.append((title, pos))
 
@@ -150,3 +186,8 @@ class ChapterParser:
         # 按空行分隔段落
         paragraphs = re.split(r'\n\s*\n', content)
         return [p.strip() for p in paragraphs if p.strip()]
+
+    @property
+    def chapter_pattern(self):
+        """章节标题匹配模式"""
+        return r'第[零一二三四五六七八九十百千0-9]+[章篇回节集]'
