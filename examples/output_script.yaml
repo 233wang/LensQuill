@@ -1,0 +1,139 @@
+# AI 小说转剧本输出
+# 本文件由AI工具自动生成，可继续编辑修改
+
+metadata:
+  version: "1.0"
+  generated_by: "AI Tool v1.0"
+  generated_at: "2026-06-05T12:00:00"
+  source_files:
+    - "examples/input_novel.txt"
+  llm_model: "qwen3.6-35b-a3b"
+
+source:
+  type: "novel"
+  title: "未知标题"
+  author: "未知作者"
+  chapters_count: 3
+  chapters:
+    - "第一章 雨夜"
+    - "第二章 旧书店"
+    - "第三章 真相"
+
+characters:
+  - id: "char_001"
+    name: "林舟"
+    role: "protagonist"
+    description: "故事主角，警惕性高，执着"
+    aliases: []
+    relationships: []
+
+  - id: "char_002"
+    name: "神秘女孩"
+    role: "unknown"
+    description: "穿着白色连衣裙的神秘女子"
+    aliases: []
+    relationships:
+      - target: "char_001"
+        type: "unknown"
+
+scenes:
+  - id: "scene_001"
+    title: "雨夜相遇"
+    chapter_ref: "第一章 雨夜"
+    location: "狭窄的巷子"
+    time: "夜晚"
+    date: ""
+    characters:
+      - "char_001"
+      - "char_002"
+    summary: "林舟在雨夜遇见神秘女子"
+    beats:
+      - id: "beat_001"
+        type: "action"
+        content: "林舟撑着伞，快步穿过狭窄的巷子。"
+        character: "char_001"
+        notes: []
+
+      - id: "beat_002"
+        type: "action"
+        content: "林舟的衬衫已经湿了大半。"
+        character: "char_001"
+        notes: []
+
+      - id: "beat_003"
+        type: "action"
+        content: "一个身影从巷子深处走来。"
+        character: ""
+        notes: []
+
+      - id: "beat_004"
+        type: "dialogue"
+        content: "你是谁？为什么会在这里？"
+        character: "char_001"
+        speaker_name: "林舟"
+        notes: []
+
+      - id: "beat_005"
+        type: "narration"
+        content: "女孩没有回答，只是静静地看着他。"
+        character: ""
+        notes: []
+
+  - id: "scene_002"
+    title: "旧书店"
+    chapter_ref: "第二章 旧书店"
+    location: "城西旧书店"
+    time: "白天"
+    date: ""
+    characters:
+      - "char_001"
+      - "char_003"
+    summary: "林舟来到旧书店询问《时间之沙》"
+    beats: []
+
+  - id: "scene_003"
+    title: "真相"
+    chapter_ref: "第三章 真相"
+    location: "旧书店内"
+    time: "白天"
+    date: ""
+    characters:
+      - "char_001"
+      - "char_003"
+    summary: "老人透露《时间之沙》的秘密"
+    beats: []
+
+beats:
+  - id: "beat_006"
+    type: "dialogue"
+    content: "你是昨天雨夜那个年轻人？"
+    character: "char_003"
+    speaker_name: "老人"
+    notes: []
+
+  - id: "beat_007"
+    type: "dialogue"
+    content: "那本书里记载着一个秘密，关于时间的秘密。"
+    character: "char_003"
+    speaker_name: "老人"
+    notes: []
+
+  - id: "beat_008"
+    type: "dialogue"
+    content: "但是，阅读这本书是有代价的。你准备好了吗？"
+    character: "char_003"
+    speaker_name: "老人"
+    notes: []
+
+notes:
+  - id: "note_001"
+    type: "editorial"
+    content: "神秘女孩的身份需要在后续章节中揭示"
+    referenced_id: ""
+    author: "ai"
+
+  - id: "note_002"
+    type: "editorial"
+    content: "《时间之沙》是贯穿全剧的重要线索"
+    referenced_id: ""
+    author: "ai"
