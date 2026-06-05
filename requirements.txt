@@ -18,3 +18,4 @@ txt-to-epub-converter>=0.2.0
 
 # Utilities
 python-dotenv>=1.0.0
+chardet>=5.0
