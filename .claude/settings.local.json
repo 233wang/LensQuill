@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(curl -L --connect-timeout 10 https://raw.githubusercontent.com/OthmanAdi/planning-with-files/master/README.md)"
+    ]
+  },
+  "language": "简体中文"
+}
