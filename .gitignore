@@ -67,3 +67,8 @@ htmlcov/
 # Docker
 .env
 .env.local
+
+# Backend
+*.pyc
+dist/
+build/
