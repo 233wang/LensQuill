@@ -44,9 +44,14 @@ async def analyze_novel(chapters: List[Dict]):
     if not chapters:
         raise HTTPException(status_code=400, detail="章节列表不能为空")
 
+    from llm.openai_api import OpenAIAPI
     from core.novel_analyzer import NovelAnalyzer
-    analyzer = NovelAnalyzer()
 
+    # 初始化 LLM API
+    llm_api = OpenAIAPI()
+    analyzer = NovelAnalyzer(llm_api=llm_api)
+
+    # 使用 LLM 提取人物和场景
     characters = analyzer.extract_characters(chapters)
     scenes = analyzer.extract_scenes(chapters)
     relationships = analyzer.analyze_relationships(characters)
@@ -73,12 +78,16 @@ async def generate_script(chapters: List[Dict], analysis: Optional[Dict] = None)
     if not chapters:
         raise HTTPException(status_code=400, detail="章节列表不能为空")
 
+    from llm.openai_api import OpenAIAPI
     from core.script_generator import ScriptGenerator
     from core.novel_analyzer import NovelAnalyzer
 
+    # 初始化 LLM API
+    llm_api = OpenAIAPI()
+
     # 如果没有提供分析结果，先进行分析
     if not analysis:
-        analyzer = NovelAnalyzer()
+        analyzer = NovelAnalyzer(llm_api=llm_api)
         analysis = {
             "characters": analyzer.extract_characters(chapters),
             "scenes": analyzer.extract_scenes(chapters),
