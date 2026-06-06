@@ -174,29 +174,46 @@ onBeforeUnmount(() => {
   gsap.killTweensOf('.chapters-card')
 })
 
-const handleBack = () => {
-  router.push('/')
-}
-
+// 处理生成剧本按钮点击
 const handleGenerate = async () => {
   if (chapters.value.length < 3) {
     alert('至少需要3个章节才能生成剧本')
     return
   }
 
+  // 显示加载动画
   generating.value = true
+
   try {
     const chapterObjects = chapters.value.map((chap) => ({
       title: chap.title,
       content: chap.content || '',
     }))
 
+    // 调用后端 API
     const response = await generateScript(chapterObjects, null)
 
     if (response && response.data && response.data.status === 'success') {
-      localStorage.setItem('scriptData', JSON.stringify(response.data.script))
-      alert('剧本生成成功')
-      router.push('/editor')
+      // 保存剧本数据
+      const scriptData = response.data.script
+      localStorage.setItem('scriptData', JSON.stringify(scriptData))
+
+      // 动画：显示成功提示
+      const card = document.querySelector('.chapters-card')
+      if (card) {
+        gsap.to(card, {
+          borderColor: 'oklch(50% 0.3 150)',
+          duration: 0.3,
+          yoyo: true,
+          repeat: 1,
+          onComplete: () => {
+            // 成功动画完成后再跳转
+            router.push('/editor')
+          }
+        })
+      } else {
+        router.push('/editor')
+      }
     } else {
       alert('生成失败：' + (response?.data?.message || '未知错误'))
     }
