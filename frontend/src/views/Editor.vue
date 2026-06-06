@@ -85,6 +85,11 @@
           </div>
         </div>
       </div>
+
+      <!-- AI 对话面板 -->
+      <div class="chat-panel">
+        <AIChat />
+      </div>
     </el-card>
   </div>
 </template>
@@ -96,6 +101,7 @@ import { ElMessage } from 'element-plus'
 import * as yaml from 'js-yaml'
 import { gsap } from 'gsap'
 import YamlEditor from '@/components/YamlEditor.vue'
+import AIChat from '@/components/AIChat.vue'
 
 const router = useRouter()
 const yamlContent = ref('')
@@ -286,5 +292,10 @@ h4 {
 
 :deep(.el-tag--dark) {
   border-radius: 4px;
+}
+
+.chat-panel {
+  height: 400px;
+  margin-top: 24px;
 }
 </style>
