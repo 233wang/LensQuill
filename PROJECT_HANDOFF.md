@@ -1,9 +1,10 @@
 # LensQuill 项目交接文档
 
-**版本:** 1.0  
+**版本:** 2.0  
 **创建日期:** 2026-06-05  
+**最后更新:** 2026-06-06  
 **交接对象:** 接手开发的 Agent  
-**当前状态:** 后端核心模块完成，前端开发进行中
+**当前状态:** 完整功能开发完成
 
 ---
 
@@ -176,10 +177,17 @@ LensQuill/
 ### 5. 讯飞星火API集成 (llm/xunfei_api.py)
 
 **功能：**
-- 调用Qwen3.6-35B-A3B模型
+- 调用讯飞星火 API（兼容 OpenAI 格式）
 - 分析小说内容
 - 提取人物和场景信息
 - 降级响应机制
+
+**API 配置 (.env):**
+```
+OPENAI_API_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
+OPENAI_API_KEY=your_api_key
+OPENAI_MODEL_ID=astron-code-latest
+```
 
 ### 6. FastAPI Web服务 (api/)
 
@@ -189,11 +197,20 @@ LensQuill/
 - `/api/generate` - 生成剧本
 - `/api/export` - 导出YAML
 
-### 7. 单元测试 (tests/)
+### 8. 前端界面 (frontend/)
 
-**测试文件：**
-- `test_chapter_parser.py` - 8个测试
-- `test_yaml_exporter.py` - 10个测试
+**功能：**
+- Vue 3 + TypeScript + Composition API
+- Element Plus UI 组件库
+- Pinia 状态管理
+- GSAP 动画效果
+- CodeMirror YAML 编辑器
+- AI 对话界面（剧本打磨助手）
+
+**页面：**
+- `Home.vue` - 首页（文本输入，支持粘贴/上传）
+- `Preview.vue` - 章节预览页
+- `Editor.vue` - YAML 编辑页 + AI 对话面板
 
 ---
 
@@ -201,7 +218,7 @@ LensQuill/
 
 ### 前端开发 (Vue 3)
 
-**当前状态：** 项目结构已搭建，开始界面设计
+**当前状态：** 完整功能开发完成
 
 **已完成：**
 - Vue 3 项目初始化
@@ -212,18 +229,20 @@ LensQuill/
 - 状态管理（Pinia）
 - API客户端封装
 - 类型定义
+- GSAP 动画效果
+- YAML 编辑器组件
+- AI 对话界面
+- 响应式设计
 
-**进行中：**
-- 首页（输入界面）设计和实现
-- 使用 `/impeccable` 进行界面设计优化
-- 深色主题 + Full palette配色方案
-- 双输入模式（粘贴/上传）
+**当前页面：**
+- 首页（输入界面）- 支持粘贴/上传
+- 预览页（章节展示）
+- 编辑页（YAML 编辑 + AI 对话）
 
 **设计规范：**
 - 项目类型：Product（工具类应用）
 - 主题：深色主题
 - 色彩策略：Full palette
-- 参考：Obsidian, Notion, Linear
 
 ---
 
@@ -503,7 +522,9 @@ cp .env.example .env
 - `feature/script-generator` - 剧本生成器（已完成）
 - `feature/tests-and-docs` - 测试和文档（已完成）
 - `feature/web-service` - Web服务（已完成）
-- `feature/vue3-frontend` - Vue3前端（进行中）
+- `feature/vue3-frontend` - Vue3前端（已完成）
+- `feature/frontend-features` - 前端功能完善（已完成）
+- `feature/gsap-animation` - GSAP动画效果（已完成）
 
 ### 分支合并流程
 
@@ -545,7 +566,7 @@ git config --global user.email "your.email@example.com"
 
 | 文件 | 说明 |
 |------|------|
-| `llm/xunfei_api.py` | 讯飞星火API集成，支持降级响应 |
+| `llm/xunfei_api.py` | 讯飞星火API集成（兼容OpenAI格式），支持降级响应 |
 
 ### 前端模块
 
@@ -555,6 +576,9 @@ git config --global user.email "your.email@example.com"
 | `frontend/src/router/index.ts` | 路由配置 |
 | `frontend/src/api/client.ts` | API客户端封装 |
 | `frontend/src/types/index.ts` | TypeScript类型定义 |
+| `frontend/src/stores/novel.ts` | Pinia状态管理 |
+| `frontend/src/components/YamlEditor.vue` | YAML编辑器组件 |
+| `frontend/src/components/AIChat.vue` | AI对话界面组件 |
 
 ---
 
@@ -567,6 +591,8 @@ git config --global user.email "your.email@example.com"
 - [x] 完成前端编辑页实现
 - [x] 集成 YAML 编辑器组件
 - [x] 完成单元测试覆盖
+- [x] 添加 GSAP 动画效果
+- [x] 添加 AI 对话界面
 
 ### 中优先级
 
@@ -599,7 +625,9 @@ git config --global user.email "your.email@example.com"
 - [x] 单元测试全部通过（18个测试）
 - [x] Pinia状态管理已配置
 - [x] API客户端拦截器已添加
-- [ ] 服务端联调测试完成
+- [x] GSAP动画效果已添加
+- [x] AI对话界面已集成
+- [x] 前后端联调测试完成
 - [ ] 文档需完善
 
 ---
@@ -649,12 +677,12 @@ A: 使用 `frontend/src/api/client.ts` 中封装的 API 函数，所有请求会
 
 ---
 
-**文档更新日期:** 2026-06-05  
-**下次更新:** 前端开发完成后
+**文档更新日期:** 2026-06-06  
+**下次更新:** 待定
 
 ---
 
-## 最新更新（2026-06-06）
+## 最新更新（2026-06-06）- 第二轮迭代
 
 ### 本次更新内容
 
@@ -676,14 +704,31 @@ A: 使用 `frontend/src/api/client.ts` 中封装的 API 函数，所有请求会
   - 集成 CodeMirror 6
   - 支持 YAML 语法高亮和主题
 
+- **动画效果**
+  - 添加 GSAP 动画库
+  - Home 页面：页面进入动画、按钮点击动画
+  - Preview 页面：章节加载动画、生成成功动画
+  - Editor 页面：编辑器加载动画
+
+- **AI 对话界面**
+  - 创建 `components/AIChat.vue` 组件
+  - 集成到 Editor 页面底部
+  - 支持 Markdown 格式化显示
+  - 添加加载动画和消息动画
+
 - **项目配置**
   - 更新 tsconfig.json 配置
-  - 更新 vite.config.ts 配置
+  - 更新 vite.config.ts 配置（host: '0.0.0.0'）
   - 添加缺失的依赖（js-yaml, codemirror, element-plus）
+
+- **Git 工作流**
+  - 所有更改按规范提交并推送到远程分支
+  - 主分支已合并所有功能
 
 - **服务状态**
   - 后端 API: http://localhost:8000 (运行中)
   - 前端开发: http://localhost:3001 (运行中)
+  - 外网访问: http://10.10.100.62:3001
 
 ### 当前运行方式
 
@@ -697,4 +742,12 @@ python -m uvicorn api.routes:router --reload
 # 前端开发
 cd frontend
 npm run dev
+```
+
+### API 配置 (.env)
+
+```
+OPENAI_API_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
+OPENAI_API_KEY=your_api_key_here
+OPENAI_MODEL_ID=astron-code-latest
 ```
