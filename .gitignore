@@ -1,6 +1,9 @@
 # Claude configuration (project-specific)
 .claude/
 
+# Claude rules (project-specific guidelines)
+.claude/rules/
+
 # Python
 __pycache__/
 *.py[cod]
