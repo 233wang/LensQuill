@@ -190,16 +190,36 @@ const handleGenerate = async () => {
       content: chap.content || '',
     }))
 
+    // 显示处理动画
+    const card = document.querySelector('.chapters-card')
+    if (card) {
+      gsap.to(card, {
+        opacity: 0.5,
+        scale: 0.98,
+        duration: 0.3,
+        ease: 'power2.inOut'
+      })
+    }
+
     // 调用后端 API
     const response = await generateScript(chapterObjects, null)
 
-    if (response && response.data && response.data.status === 'success') {
+    // 恢复卡片动画
+    if (card) {
+      gsap.from(card, {
+        scale: 0.9,
+        opacity: 0,
+        duration: 0.5,
+        ease: 'back.out(1.7)'
+      })
+    }
+
+    if (response && response.status === 'success') {
       // 保存剧本数据
-      const scriptData = response.data.script
+      const scriptData = response.script
       localStorage.setItem('scriptData', JSON.stringify(scriptData))
 
-      // 动画：显示成功提示
-      const card = document.querySelector('.chapters-card')
+      // 成功动画
       if (card) {
         gsap.to(card, {
           borderColor: 'oklch(50% 0.3 150)',
@@ -215,10 +235,10 @@ const handleGenerate = async () => {
         router.push('/editor')
       }
     } else {
-      alert('生成失败：' + (response?.data?.message || '未知错误'))
+      alert('生成失败：' + (response?.message || '未知错误'))
     }
   } catch (error: any) {
-    const errorMessage = error?.response?.data?.message || '生成失败，请重试'
+    const errorMessage = error?.message || '生成失败，请重试'
     alert(errorMessage)
     console.error(error)
   } finally {
