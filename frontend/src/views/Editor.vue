@@ -93,7 +93,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { parse } from 'js-yaml'
+import * as yaml from 'js-yaml'
 import YamlEditor from '@/components/YamlEditor.vue'
 
 const router = useRouter()
@@ -116,7 +116,7 @@ onMounted(() => {
 
 const dumpYaml = (data: any): string => {
   try {
-    return parse(yamlContent.value)
+    return yaml.dump(data)
   } catch {
     // 如果解析失败，使用简单的格式化
     return JSON.stringify(data, null, 2)
@@ -140,7 +140,7 @@ const handleDownload = () => {
 
 const handleSave = async () => {
   try {
-    parse(yamlContent.value)
+    yaml.load(yamlContent.value)
     localStorage.setItem('scriptData', yamlContent.value)
     ElMessage.success('保存成功')
   } catch (error) {
