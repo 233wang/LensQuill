@@ -13,102 +13,47 @@
       </div>
     </div>
 
-    <el-card class="editor-card">
-      <div class="editor-container">
-        <YamlEditor v-model="yamlContent" />
-      </div>
-
-      <div class="preview-panel">
-        <h3>剧本预览</h3>
-        <div class="preview-content">
-          <el-descriptions v-if="scriptData" :column="2" border>
-            <el-descriptions-item label="标题">
-              {{ scriptData.source?.title || '未知' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="章节数">
-              {{ scriptData.source?.chapters_count || 0 }}
-            </el-descriptions-item>
-            <el-descriptions-item label="人物">
-              <el-tag v-if="scriptData.characters?.length > 0" type="success" effect="dark">
-                {{ scriptData.characters?.length || 0 }}
-              </el-tag>
-              <span v-else>0</span>
-            </el-descriptions-item>
-            <el-descriptions-item label="场景">
-              <el-tag v-if="scriptData.scenes?.length > 0" type="primary" effect="dark">
-                {{ scriptData.scenes?.length || 0 }}
-              </el-tag>
-              <span v-else>0</span>
-            </el-descriptions-item>
-          </el-descriptions>
-
-          <div v-if="scriptData?.characters?.length > 0" class="characters-preview">
-            <h4>人物列表</h4>
-            <div class="characters-list">
-              <el-tag
-                v-for="char in scriptData.characters.slice(0, 5)"
-                :key="char.id"
-                class="char-tag"
-                effect="dark"
-              >
-                {{ char.name }}
-              </el-tag>
-              <el-tag
-                v-if="scriptData.characters.length > 5"
-                type="info"
-                effect="dark"
-              >
-                +{{ scriptData.characters.length - 5 }} 个
-              </el-tag>
-            </div>
+    <el-card class="editor-card" shadow="never">
+      <div class="editor-layout">
+        <!-- 左侧 YAML 编辑器 -->
+        <div class="editor-panel">
+          <div class="panel-header">
+            <h3>YAML 编辑</h3>
+            <span class="panel-hint">可手动编辑 YAML 内容</span>
           </div>
-
-          <div v-if="scriptData?.scenes?.length > 0" class="scenes-preview">
-            <h4>场景列表</h4>
-            <div class="scenes-list">
-              <div
-                v-for="scene in scriptData.scenes.slice(0, 3)"
-                :key="scene.id"
-                class="scene-item"
-              >
-                <span class="scene-title">{{ scene.title }}</span>
-                <span class="scene-location">{{ scene.location }}</span>
-              </div>
-              <el-link
-                v-if="scriptData.scenes.length > 3"
-                type="primary"
-                @click="handleViewAllScenes"
-              >
-                查看更多
-              </el-link>
-            </div>
+          <div class="editor-container">
+            <textarea
+              v-model="yamlContent"
+              class="editor-textarea"
+              placeholder="YAML 内容将在此处显示"
+              spellcheck="false"
+            />
           </div>
         </div>
-      </div>
 
-      <!-- AI 对话面板 -->
-      <div class="chat-panel">
-        <AIChat />
+        <!-- 右侧 AI 对话面板 -->
+        <div class="chat-panel">
+          <AIChat v-model:yaml-content="yamlContent" :script-data="scriptData" />
+        </div>
       </div>
     </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as yaml from 'js-yaml'
 import { gsap } from 'gsap'
-import YamlEditor from '@/components/YamlEditor.vue'
 import AIChat from '@/components/AIChat.vue'
 
 const router = useRouter()
 const yamlContent = ref('')
 const scriptData = ref<any>(null)
 
+// 页面进入动画
 onMounted(() => {
-  // 页面进入动画
   gsap.from('.editor .header', {
     y: -30,
     opacity: 0,
@@ -123,52 +68,54 @@ onMounted(() => {
     delay: 0.2,
     ease: 'power2.out'
   })
-
-  // YAML 内容加载动画
-  const textarea = document.querySelector('.editor-textarea')
-  if (textarea) {
-    gsap.from(textarea, {
-      opacity: 0,
-      duration: 0.5,
-      delay: 0.4,
-      ease: 'power2.out'
-    })
-  }
-
-  const storedScript = localStorage.getItem('scriptData')
-  if (storedScript) {
-    try {
-      const data = JSON.parse(storedScript)
-      scriptData.value = data
-      // 尝试转换为 YAML 格式
-      yamlContent.value = dumpYaml(data)
-    } catch {
-      yamlContent.value = storedScript
-    }
-  }
 })
 
 // 页面离开清理
 onBeforeUnmount(() => {
   gsap.killTweensOf('.editor .header')
   gsap.killTweensOf('.editor-card')
-  gsap.killTweensOf('.editor-textarea')
 })
 
+// 加载脚本数据
+const loadScriptData = () => {
+  const storedScript = localStorage.getItem('scriptData')
+  if (storedScript) {
+    try {
+      const data = JSON.parse(storedScript)
+      scriptData.value = data
+      yamlContent.value = dumpYaml(data)
+    } catch {
+      yamlContent.value = storedScript
+    }
+  }
+}
+
+// 转换为 YAML
 const dumpYaml = (data: any): string => {
   try {
     return yaml.dump(data)
   } catch {
-    // 如果解析失败，使用简单的格式化
     return JSON.stringify(data, null, 2)
   }
 }
+
+// 加载数据
+loadScriptData()
+
+// 监听 YAML 内容变化
+watch(yamlContent, (newVal) => {
+  localStorage.setItem('scriptData', newVal)
+})
 
 const handleBack = () => {
   router.push('/preview')
 }
 
 const handleDownload = () => {
+  if (!yamlContent.value) {
+    ElMessage.warning('没有可下载的内容')
+    return
+  }
   const blob = new Blob([yamlContent.value], { type: 'text/yaml' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
@@ -180,6 +127,10 @@ const handleDownload = () => {
 }
 
 const handleSave = async () => {
+  if (!yamlContent.value) {
+    ElMessage.warning('YAML 内容不能为空')
+    return
+  }
   try {
     yaml.load(yamlContent.value)
     localStorage.setItem('scriptData', yamlContent.value)
@@ -188,10 +139,6 @@ const handleSave = async () => {
     ElMessage.error('YAML 格式无效')
     console.error(error)
   }
-}
-
-const handleViewAllScenes = () => {
-  ElMessage.info('场景列表预览功能')
 }
 </script>
 
@@ -227,62 +174,67 @@ const handleViewAllScenes = () => {
   overflow: hidden;
 }
 
-.editor-container {
-  padding: 0;
-  height: 600px;
+.editor-layout {
+  display: flex;
+  gap: 24px;
+  height: 700px;
 }
 
-.preview-panel {
-  border-top: 1px solid oklch(25% 0.01 240);
-  padding: 20px;
-  background: oklch(15% 0.01 240);
+.editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: oklch(15% 0.01 240);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
-.preview-panel h3 {
-  font-size: 18px;
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: oklch(18% 0.01 240);
+  border-bottom: 1px solid oklch(25% 0.01 240);
+}
+
+.panel-header h3 {
+  margin: 0;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0 0 16px 0;
   color: oklch(95% 0.01 240);
 }
 
-.characters-list,
-.scenes-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 12px;
-}
-
-.char-tag {
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.scene-item {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 12px;
-  background: oklch(20% 0.01 240);
-  border-radius: 6px;
-  font-size: 13px;
-  border: 1px solid oklch(25% 0.01 240);
-}
-
-.scene-title {
-  font-weight: 500;
+.panel-hint {
+  font-size: 12px;
   color: oklch(70% 0.01 240);
 }
 
-.scene-location {
-  font-size: 11px;
-  color: oklch(55% 0.01 240);
+.editor-container {
+  flex: 1;
+  overflow: hidden;
 }
 
-h4 {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 16px 0 8px 0;
+.editor-textarea {
+  width: 100%;
+  height: 100%;
+  background-color: oklch(10% 0.01 240);
+  border: none;
   color: oklch(95% 0.01 240);
+  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+  font-size: 13px;
+  padding: 16px;
+  resize: none;
+  line-height: 1.6;
+}
+
+.editor-textarea:focus {
+  outline: none;
+}
+
+.chat-panel {
+  flex: 1;
+  min-width: 350px;
 }
 
 :deep(.el-button) {
@@ -290,12 +242,13 @@ h4 {
   font-weight: 600;
 }
 
-:deep(.el-tag--dark) {
-  border-radius: 4px;
+:deep(.el-button--primary) {
+  background: oklch(60% 0.25 250);
+  border-color: oklch(60% 0.25 250);
 }
 
-.chat-panel {
-  height: 400px;
-  margin-top: 24px;
+:deep(.el-button--primary:hover) {
+  background: oklch(65% 0.25 250);
+  border-color: oklch(65% 0.25 250);
 }
 </style>
