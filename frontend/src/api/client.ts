@@ -22,7 +22,7 @@ apiClient.interceptors.request.use(
 // Response interceptor
 apiClient.interceptors.response.use(
   (response) => {
-    return response
+    return response.data
   },
   (error) => {
     const message = error.response?.data?.message || error.message || '请求失败'
