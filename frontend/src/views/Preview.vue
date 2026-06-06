@@ -76,6 +76,28 @@ const loading = ref(false)
 const generating = ref(false)
 const novelContent = ref('')
 
+// 定义 parseChapters 函数 - 必须在 loadChapters 之前
+const parseChapters = (content: string) => {
+  const pattern = /第[零一二三四五六七八九十百千0-9]+[章篇回]/g
+  const matches = [...content.matchAll(pattern)]
+
+  chapters.value = matches.map((match, index) => {
+    const start = match.index || 0
+    const end = matches[index + 1]?.index || content.length
+    const chapterContent = content.substring(start, end)
+
+    return {
+      index: index + 1,
+      title: match[0],
+      content: chapterContent,
+      length: chapterContent.length,
+      preview: chapterContent.substring(0, 30) + '...',
+    }
+  })
+
+  localStorage.setItem('chapters', JSON.stringify(chapters.value))
+}
+
 const loadChapters = () => {
   const storedContent = localStorage.getItem('novelContent')
   const storedChapters = localStorage.getItem('chapters')
@@ -93,27 +115,6 @@ const loadChapters = () => {
 }
 
 loadChapters()
-
-const parseChapters = (content: string) => {
-  const pattern = /第[零一二三四五六七八九十百千0-9]+[章篇回]/g
-  const matches = [...content.matchAll(pattern)]
-
-  chapters.value = matches.map((match, index) => {
-    const start = match.index || 0
-    const end = matches[index + 1]?.index || content.length
-    const chapterContent = content.substring(start, end)
-
-    return {
-      index: index + 1,
-      title: match[0],
-      content: chapterContent,  // 保存完整内容
-      length: chapterContent.length,
-      preview: chapterContent.substring(0, 30) + '...',
-    }
-  })
-
-  localStorage.setItem('chapters', JSON.stringify(chapters.value))
-}
 
 const handleBack = () => {
   router.push('/')
