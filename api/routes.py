@@ -78,12 +78,12 @@ async def generate_script(chapters: List[Dict], analysis: Optional[Dict] = None)
     if not chapters:
         raise HTTPException(status_code=400, detail="章节列表不能为空")
 
-    from llm.openai_api import OpenAIAPI
+    from llm.xunfei_api import XunFeiAPI
     from core.script_generator import ScriptGenerator
     from core.novel_analyzer import NovelAnalyzer
 
     # 初始化 LLM API
-    llm_api = OpenAIAPI()
+    llm_api = XunFeiAPI()
 
     # 如果没有提供分析结果，先进行分析
     if not analysis:
