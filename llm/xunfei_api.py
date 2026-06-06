@@ -10,15 +10,15 @@ load_dotenv()
 
 
 class XunFeiAPI:
-    """讯飞星火API类"""
+    """讯飞星火API类（兼容OpenAI格式）"""
 
     def __init__(self):
         """初始化API客户端"""
-        self.api_key = os.getenv("XUNFEI_API_KEY")
-        self.api_secret = os.getenv("XUNFEI_API_SECRET")
-        self.app_id = os.getenv("XUNFEI_APP_ID")
-        self.api_url = "https://spark-api.xf-yun.com/v3.5/chat"
-        self.is_configured = bool(self.api_key and self.api_secret and self.app_id)
+        # 讯飞 API 配置
+        self.api_url = os.getenv("OPENAI_API_URL", "https://maas-coding-api.cn-huabei-1.xf-yun.com/v2")
+        self.api_key = os.getenv("OPENAI_API_KEY")
+        self.model_id = os.getenv("OPENAI_MODEL_ID", "qwen3.6-35b-a3b")
+        self.is_configured = bool(self.api_key and self.api_url)
 
     def call_llm(self, prompt: str, temperature: float = 0.7) -> str:
         """
@@ -34,26 +34,15 @@ class XunFeiAPI:
         if not self.is_configured:
             return self._get_fallback_response(prompt)
 
-        # 构建请求体
+        # 构建请求体 - 兼容 OpenAI 格式
         request_data = {
-            "header": {
-                "app_id": self.app_id,
-                "uid": "user_001"
-            },
-            "parameter": {
-                "chat": {
-                    "domain": "general",
-                    "temperature": temperature,
-                    "max_tokens": 2048
-                }
-            },
-            "payload": {
-                "message": {
-                    "text": [
-                        {"role": "user", "content": prompt}
-                    ]
-                }
-            }
+            "model": self.model_id,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的剧本创作助手。你生成的内容必须是有效的JSON格式。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": temperature,
+            "max_tokens": 2048
         }
 
         try:
@@ -64,13 +53,17 @@ class XunFeiAPI:
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json"
                 },
-                timeout=30
+                timeout=60
             )
+
+            print(f"API响应状态码: {response.status_code}")
+            print(f"API响应内容: {response.text[:200]}")
+
             response.raise_for_status()
             result = response.json()
 
-            if result.get("header", {}).get("code") == 0:
-                return result["payload"]["choices"]["text"][0]["content"]
+            if "choices" in result and len(result["choices"]) > 0:
+                return result["choices"][0]["message"]["content"]
             else:
                 return self._get_fallback_response(prompt)
 

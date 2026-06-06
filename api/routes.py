@@ -44,11 +44,11 @@ async def analyze_novel(chapters: List[Dict]):
     if not chapters:
         raise HTTPException(status_code=400, detail="章节列表不能为空")
 
-    from llm.openai_api import OpenAIAPI
+    from llm.xunfei_api import XunFeiAPI
     from core.novel_analyzer import NovelAnalyzer
 
     # 初始化 LLM API
-    llm_api = OpenAIAPI()
+    llm_api = XunFeiAPI()
     analyzer = NovelAnalyzer(llm_api=llm_api)
 
     # 使用 LLM 提取人物和场景
