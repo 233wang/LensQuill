@@ -102,10 +102,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { UploadFile } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { uploadText, generateScript } from '@/api/client'
+import { gsap } from 'gsap'
 
 const router = useRouter()
 const inputMethod = ref<'paste' | 'upload'>('paste')
@@ -152,7 +153,59 @@ const handleExample = () => {
 `
 }
 
+// GSAP 动画 - 页面进入
+onMounted(() => {
+  // Hero 区域动画
+  gsap.from('.hero h1', {
+    y: -50,
+    opacity: 0,
+    duration: 0.8,
+    ease: 'power3.out'
+  })
+
+  gsap.from('.subtitle', {
+    y: 30,
+    opacity: 0,
+    duration: 0.8,
+    delay: 0.2,
+    ease: 'power3.out'
+  })
+
+  // 输入卡片动画
+  gsap.from('.input-card', {
+    y: 40,
+    opacity: 0,
+    duration: 0.6,
+    delay: 0.4,
+    ease: 'power2.out'
+  })
+
+  // 功能卡片动画
+  const featureCards = document.querySelectorAll('.feature-item')
+  featureCards.forEach((card, index) => {
+    gsap.from(card, {
+      y: 30,
+      opacity: 0,
+      duration: 0.5,
+      delay: 0.6 + index * 0.1,
+      ease: 'power2.out'
+    })
+  })
+})
+
+// GSAP 动画 - 开始处理按钮点击效果
 const handleProcess = async () => {
+  // 按钮点击动画
+  const button = document.querySelector('.actions .el-button--primary')
+  if (button) {
+    gsap.to(button, {
+      scale: 0.95,
+      duration: 0.1,
+      yoyo: true,
+      repeat: 1
+    })
+  }
+
   processing.value = true
   try {
     let content = ''
@@ -186,6 +239,13 @@ const handleProcess = async () => {
     processing.value = false
   }
 }
+
+// 页面离开清理
+onBeforeUnmount(() => {
+  gsap.killTweensOf('.hero h1')
+  gsap.killTweensOf('.subtitle')
+  gsap.killTweensOf('.input-card')
+})
 
 const parseChapters = (content: string): any[] => {
   const pattern = /第[零一二三四五六七八九十百千0-9]+[章篇回]/g
