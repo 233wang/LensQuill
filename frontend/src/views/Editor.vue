@@ -177,7 +177,8 @@ const handleSave = async () => {
 .editor-layout {
   display: flex;
   gap: 24px;
-  height: 700px;
+  height: 600px;
+  min-height: 400px;
 }
 
 .editor-panel {
@@ -238,6 +239,9 @@ const handleSave = async () => {
   flex: 1;
   min-width: 350px;
   height: 100%;
+  background-color: oklch(18% 0.01 240);
+  border-radius: 12px;
+  overflow: hidden;
 }
 
 :deep(.el-button) {
