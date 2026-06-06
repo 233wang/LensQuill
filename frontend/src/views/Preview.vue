@@ -10,51 +10,72 @@
       </div>
     </div>
 
+    <!-- 统计信息卡片 -->
     <div class="summary-card">
-      <el-descriptions :column="3" border>
-        <el-descriptions-item label="总章节数">
-          <el-tag v-if="chapters.length >= 3" type="success" effect="dark">
-            {{ chapters.length }}
-          </el-tag>
-          <el-tag v-else type="warning" effect="dark">
-            {{ chapters.length }}
-          </el-tag>
-        </el-descriptions-item>
-        <el-descriptions-item label="总字数">
-          {{ totalLength }}
-        </el-descriptions-item>
-        <el-descriptions-item label="处理状态">
-          <el-tag v-if="chapters.length >= 3" type="success" effect="dark">
-            就绪
-          </el-tag>
-          <el-tag v-else type="warning" effect="dark">
-            需至少3章
-          </el-tag>
-        </el-descriptions-item>
-      </el-descriptions>
+      <el-card shadow="never">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">总章节数</div>
+            <div class="summary-value">
+              <el-tag :type="chapters.length >= 3 ? 'success' : 'warning'" effect="dark">
+                {{ chapters.length }}
+              </el-tag>
+              <span class="summary-subtext" v-if="chapters.length < 3">（需至少3章）</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">总字数</div>
+            <div class="summary-value">
+              <span class="summary-number">{{ totalLength }}</span>
+              <span class="summary-unit">字</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">平均字数</div>
+            <div class="summary-value">
+              <span class="summary-number">{{ avgLength }}</span>
+              <span class="summary-unit">字/章</span>
+            </div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">处理状态</div>
+            <div class="summary-value">
+              <el-tag :type="chapters.length >= 3 ? 'success' : 'warning'" effect="dark">
+                {{ chapters.length >= 3 ? '就绪' : '需至少3章' }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+      </el-card>
     </div>
 
-    <el-card class="chapters-card">
-      <el-table
-        v-if="chapters.length > 0"
-        :data="chapters"
-        style="width: 100%"
-        border
-      >
-        <el-table-column prop="index" label="序号" width="80" align="center" />
-        <el-table-column prop="title" label="章节标题" />
-        <el-table-column prop="length" label="字数" width="100" align="center" />
-        <el-table-column prop="preview" label="预览" width="200">
-          <template #default="{ row }">
-            <span class="preview-text">{{ row.preview }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
+    <!-- 章节列表卡片 -->
+    <el-card class="chapters-card" shadow="never">
+      <!-- 章节列表 -->
+      <div class="chapter-list" v-if="chapters.length > 0">
+        <div class="chapter-item" v-for="(chapter, index) in chapters" :key="chapter.index">
+          <div class="chapter-index">
+            <span class="index-number">{{ chapter.index }}</span>
+          </div>
+          <div class="chapter-content">
+            <div class="chapter-title">{{ chapter.title }}</div>
+            <div class="chapter-meta">
+              <span class="meta-item">{{ chapter.length }} 字</span>
+              <span class="meta-item">第 {{ chapter.index }} 章</span>
+            </div>
+            <div class="chapter-preview">
+              {{ chapter.preview }}
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <!-- 加载状态 -->
       <div v-else-if="loading" class="loading">
         <el-skeleton :rows="5" />
       </div>
 
+      <!-- 空状态 -->
       <div v-else class="empty">
         <el-empty description="暂无数据，请从首页上传小说">
           <el-button type="primary" @click="handleBack">返回首页</el-button>
@@ -76,7 +97,7 @@ const loading = ref(false)
 const generating = ref(false)
 const novelContent = ref('')
 
-// 定义 parseChapters 函数 - 必须在 loadChapters 之前
+// 解析章节
 const parseChapters = (content: string) => {
   const pattern = /第[零一二三四五六七八九十百千0-9]+[章篇回]/g
   const matches = [...content.matchAll(pattern)]
@@ -91,13 +112,14 @@ const parseChapters = (content: string) => {
       title: match[0],
       content: chapterContent,
       length: chapterContent.length,
-      preview: chapterContent.substring(0, 30) + '...',
+      preview: chapterContent.substring(0, 80) + '...',
     }
   })
 
   localStorage.setItem('chapters', JSON.stringify(chapters.value))
 }
 
+// 加载章节
 const loadChapters = () => {
   const storedContent = localStorage.getItem('novelContent')
   const storedChapters = localStorage.getItem('chapters')
@@ -114,15 +136,13 @@ const loadChapters = () => {
   }
 }
 
-loadChapters()
-
-const handleBack = () => {
-  router.push('/')
-}
+// 初始化加载
+onMounted(() => {
+  loadChapters()
+})
 
 // 页面进入动画
 onMounted(() => {
-  // 动画：卡片渐入
   gsap.from('.preview .header', {
     y: -30,
     opacity: 0,
@@ -154,6 +174,10 @@ onBeforeUnmount(() => {
   gsap.killTweensOf('.chapters-card')
 })
 
+const handleBack = () => {
+  router.push('/')
+}
+
 const handleGenerate = async () => {
   if (chapters.value.length < 3) {
     alert('至少需要3个章节才能生成剧本')
@@ -162,7 +186,6 @@ const handleGenerate = async () => {
 
   generating.value = true
   try {
-    // 修正：正确传递章节内容
     const chapterObjects = chapters.value.map((chap) => ({
       title: chap.title,
       content: chap.content || '',
@@ -171,17 +194,6 @@ const handleGenerate = async () => {
     const response = await generateScript(chapterObjects, null)
 
     if (response && response.data && response.data.status === 'success') {
-      // 生成成功动画
-      const successEl = document.querySelector('.chapters-card')
-      if (successEl) {
-        gsap.from(successEl, {
-          scale: 0.9,
-          opacity: 0,
-          duration: 0.4,
-          ease: 'back.out(1.7)'
-        })
-      }
-
       localStorage.setItem('scriptData', JSON.stringify(response.data.script))
       alert('剧本生成成功')
       router.push('/editor')
@@ -197,13 +209,14 @@ const handleGenerate = async () => {
   }
 }
 
-// 页面离开清理
-onBeforeUnmount(() => {
-  gsap.killTweensOf('.chapters-card')
-})
-
+// 计算属性
 const totalLength = computed(() => {
   return chapters.value.reduce((sum, chap) => sum + chap.length, 0)
+})
+
+const avgLength = computed(() => {
+  if (chapters.value.length === 0) return 0
+  return Math.round(totalLength.value / chapters.value.length)
 })
 </script>
 
@@ -218,7 +231,7 @@ const totalLength = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
 }
 
 .header h1 {
@@ -236,11 +249,121 @@ const totalLength = computed(() => {
   margin-bottom: 24px;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.summary-label {
+  font-size: 14px;
+  color: oklch(70% 0.01 240);
+  font-weight: 500;
+}
+
+.summary-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-number {
+  font-size: 32px;
+  font-weight: 700;
+  color: oklch(95% 0.01 240);
+}
+
+.summary-unit {
+  font-size: 14px;
+  color: oklch(70% 0.01 240);
+}
+
+.summary-subtext {
+  font-size: 12px;
+  color: oklch(70% 0.01 240);
+}
+
 .chapters-card {
   background-color: oklch(18% 0.01 240);
   border: 1px solid oklch(25% 0.01 240);
   border-radius: 12px;
   overflow: hidden;
+}
+
+.chapter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.chapter-item {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
+  background-color: oklch(15% 0.01 240);
+  border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
+  transition: all 0.2s ease;
+}
+
+.chapter-item:hover {
+  background-color: oklch(20% 0.01 240);
+  border-color: oklch(35% 0.01 240);
+  transform: translateX(4px);
+}
+
+.chapter-index {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, oklch(60% 0.25 250) 0%, oklch(75% 0.2 330) 100%);
+  border-radius: 12px;
+}
+
+.index-number {
+  font-size: 24px;
+  font-weight: 700;
+  color: white;
+}
+
+.chapter-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chapter-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: oklch(95% 0.01 240);
+}
+
+.chapter-meta {
+  display: flex;
+  gap: 24px;
+}
+
+.meta-item {
+  font-size: 13px;
+  color: oklch(70% 0.01 240);
+}
+
+.chapter-preview {
+  font-size: 14px;
+  color: oklch(70% 0.01 240);
+  line-height: 1.6;
+  opacity: 0.8;
 }
 
 .loading {
@@ -252,12 +375,16 @@ const totalLength = computed(() => {
   text-align: center;
 }
 
-.preview-text {
-  color: oklch(70% 0.01 240);
-  font-size: 13px;
-}
-
 :deep(.el-tag--dark) {
   border-radius: 6px;
+}
+
+:deep(.el-card) {
+  background-color: transparent;
+  border: none;
+}
+
+:deep(.el-card__body) {
+  padding: 0;
 }
 </style>
