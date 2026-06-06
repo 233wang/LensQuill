@@ -65,9 +65,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateScript } from '@/api/client'
+import { gsap } from 'gsap'
 
 const router = useRouter()
 const chapters = ref<any[]>([])
@@ -117,6 +118,40 @@ const handleBack = () => {
   router.push('/')
 }
 
+// 页面进入动画
+onMounted(() => {
+  // 动画：卡片渐入
+  gsap.from('.preview .header', {
+    y: -30,
+    opacity: 0,
+    duration: 0.6,
+    ease: 'power2.out'
+  })
+
+  gsap.from('.summary-card', {
+    y: 30,
+    opacity: 0,
+    duration: 0.6,
+    delay: 0.2,
+    ease: 'power2.out'
+  })
+
+  gsap.from('.chapters-card', {
+    y: 30,
+    opacity: 0,
+    duration: 0.6,
+    delay: 0.4,
+    ease: 'power2.out'
+  })
+})
+
+// 页面离开清理
+onBeforeUnmount(() => {
+  gsap.killTweensOf('.preview .header')
+  gsap.killTweensOf('.summary-card')
+  gsap.killTweensOf('.chapters-card')
+})
+
 const handleGenerate = async () => {
   if (chapters.value.length < 3) {
     alert('至少需要3个章节才能生成剧本')
@@ -133,6 +168,17 @@ const handleGenerate = async () => {
     const response = await generateScript(chapterObjects, null)
 
     if (response.data && response.data.status === 'success') {
+      // 生成成功动画
+      const successEl = document.querySelector('.chapters-card')
+      if (successEl) {
+        gsap.from(successEl, {
+          scale: 0.9,
+          opacity: 0,
+          duration: 0.4,
+          ease: 'back.out(1.7)'
+        })
+      }
+
       localStorage.setItem('scriptData', JSON.stringify(response.data.script))
       alert('剧本生成成功')
       router.push('/editor')
@@ -147,6 +193,11 @@ const handleGenerate = async () => {
     generating.value = false
   }
 }
+
+// 页面离开清理
+onBeforeUnmount(() => {
+  gsap.killTweensOf('.chapters-card')
+})
 
 const totalLength = computed(() => {
   return chapters.value.reduce((sum, chap) => sum + chap.length, 0)
