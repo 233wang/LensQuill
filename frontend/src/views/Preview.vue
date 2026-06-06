@@ -106,6 +106,7 @@ const parseChapters = (content: string) => {
     return {
       index: index + 1,
       title: match[0],
+      content: chapterContent,  // 保存完整内容
       length: chapterContent.length,
       preview: chapterContent.substring(0, 30) + '...',
     }
@@ -160,6 +161,7 @@ const handleGenerate = async () => {
 
   generating.value = true
   try {
+    // 修正：正确传递章节内容
     const chapterObjects = chapters.value.map((chap) => ({
       title: chap.title,
       content: chap.content || '',
@@ -167,7 +169,7 @@ const handleGenerate = async () => {
 
     const response = await generateScript(chapterObjects, null)
 
-    if (response.data && response.data.status === 'success') {
+    if (response && response.data && response.data.status === 'success') {
       // 生成成功动画
       const successEl = document.querySelector('.chapters-card')
       if (successEl) {
@@ -183,7 +185,7 @@ const handleGenerate = async () => {
       alert('剧本生成成功')
       router.push('/editor')
     } else {
-      alert('生成失败：' + (response.data?.message || '未知错误'))
+      alert('生成失败：' + (response?.data?.message || '未知错误'))
     }
   } catch (error: any) {
     const errorMessage = error?.response?.data?.message || '生成失败，请重试'
