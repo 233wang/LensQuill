@@ -87,6 +87,7 @@ const loadChapters = () => {
     parseChapters(storedContent)
   } else {
     chapters.value = []
+    novelContent.value = ''
   }
 }
 
@@ -124,28 +125,23 @@ const handleGenerate = async () => {
 
   generating.value = true
   try {
-    const chapterObjects = chapters.value.map((chap, index) => {
-      const content = novelContent.value.substring(
-        0,
-        Math.min(5000, novelContent.value.length)
-      )
-      return {
-        title: chap.title,
-        content: content,
-      }
-    })
+    const chapterObjects = chapters.value.map((chap) => ({
+      title: chap.title,
+      content: chap.content || '',
+    }))
 
-    const response = await generateScript(chapterObjects)
+    const response = await generateScript(chapterObjects, null)
 
-    if (response.data.status === 'success') {
+    if (response.data && response.data.status === 'success') {
       localStorage.setItem('scriptData', JSON.stringify(response.data.script))
       alert('剧本生成成功')
       router.push('/editor')
     } else {
-      alert('生成失败')
+      alert('生成失败：' + (response.data?.message || '未知错误'))
     }
-  } catch (error) {
-    alert('生成失败，请重试')
+  } catch (error: any) {
+    const errorMessage = error?.response?.data?.message || '生成失败，请重试'
+    alert(errorMessage)
     console.error(error)
   } finally {
     generating.value = false

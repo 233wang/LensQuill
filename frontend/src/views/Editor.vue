@@ -15,11 +15,7 @@
 
     <el-card class="editor-card">
       <div class="editor-container">
-        <textarea
-          v-model="yamlContent"
-          class="editor-textarea"
-          placeholder="YAML 内容将在此处显示"
-        />
+        <YamlEditor v-model="yamlContent" />
       </div>
 
       <div class="preview-panel">
@@ -98,6 +94,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { parse } from 'js-yaml'
+import YamlEditor from '@/components/YamlEditor.vue'
 
 const router = useRouter()
 const yamlContent = ref('')
@@ -109,12 +106,22 @@ onMounted(() => {
     try {
       const data = JSON.parse(storedScript)
       scriptData.value = data
-      yamlContent.value = JSON.stringify(data, null, 2)
+      // 尝试转换为 YAML 格式
+      yamlContent.value = dumpYaml(data)
     } catch {
       yamlContent.value = storedScript
     }
   }
 })
+
+const dumpYaml = (data: any): string => {
+  try {
+    return parse(yamlContent.value)
+  } catch {
+    // 如果解析失败，使用简单的格式化
+    return JSON.stringify(data, null, 2)
+  }
+}
 
 const handleBack = () => {
   router.push('/preview')
@@ -143,7 +150,6 @@ const handleSave = async () => {
 }
 
 const handleViewAllScenes = () => {
-  // 可以扩展为查看所有场景的详细信息
   ElMessage.info('场景列表预览功能')
 }
 </script>
@@ -182,25 +188,7 @@ const handleViewAllScenes = () => {
 
 .editor-container {
   padding: 0;
-}
-
-.editor-textarea {
-  width: 100%;
   height: 600px;
-  background-color: oklch(10% 0.01 240);
-  border: 1px solid oklch(25% 0.01 240);
-  border-radius: 0;
-  color: oklch(95% 0.01 240);
-  font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
-  font-size: 14px;
-  padding: 16px;
-  resize: vertical;
-  line-height: 1.6;
-}
-
-.editor-textarea:focus {
-  outline: none;
-  border-color: oklch(60% 0.25 250);
 }
 
 .preview-panel {

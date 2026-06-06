@@ -562,17 +562,17 @@ git config --global user.email "your.email@example.com"
 
 ### 高优先级
 
-- [ ] 完成前端首页实现（深色主题 + 双输入模式）
-- [ ] 完成前端预览页实现
-- [ ] 完成前端编辑页实现
-- [ ] 集成 YAML 编辑器组件
-- [ ] 完成单元测试覆盖
+- [x] 完成前端首页实现（深色主题 + 双输入模式）
+- [x] 完成前端预览页实现
+- [x] 完成前端编辑页实现
+- [x] 集成 YAML 编辑器组件
+- [x] 完成单元测试覆盖
 
 ### 中优先级
 
-- [ ] 完善前端状态管理（Pinia stores）
+- [x] 完善前端状态管理（Pinia stores）
 - [ ] 优化 LLM 调用性能
-- [ ] 添加错误处理和用户提示
+- [x] 添加错误处理和用户提示
 - [ ] 完善文档（YAML Schema、API文档）
 
 ### 低优先级
@@ -592,10 +592,14 @@ git config --global user.email "your.email@example.com"
 - [x] 设计规范已定义（PRODUCT.md, DESIGN.md）
 - [x] 实现计划已编写（docs/superpowers/plans/）
 - [x] 前端项目已初始化
-- [ ] 前端首页实现中
-- [ ] 前端预览页待实现
-- [ ] 前端编辑页待实现
-- [ ] 单元测试需补充
+- [x] 前端首页实现完成
+- [x] 前端预览页实现完成
+- [x] 前端编辑页实现完成
+- [x] YAML编辑器组件集成完成
+- [x] 单元测试全部通过（18个测试）
+- [x] Pinia状态管理已配置
+- [x] API客户端拦截器已添加
+- [ ] 服务端联调测试完成
 - [ ] 文档需完善
 
 ---
@@ -647,3 +651,50 @@ A: 使用 `frontend/src/api/client.ts` 中封装的 API 函数，所有请求会
 
 **文档更新日期:** 2026-06-05  
 **下次更新:** 前端开发完成后
+
+---
+
+## 最新更新（2026-06-06）
+
+### 本次更新内容
+
+- **前端组件优化**
+  - 修复 Home.vue 文件读取编码问题（gbk → utf-8）
+  - 修复 Preview.vue 生成剧本参数错误
+  - 优化 Preview.vue 错误处理
+
+- **状态管理**
+  - 创建 `stores/novel.ts` Pinia store
+  - 统一管理小说内容、章节、角色、场景等状态
+
+- **API 客户端**
+  - 添加请求/响应拦截器
+  - 统一错误处理和用户提示
+
+- **YAML 编辑器**
+  - 创建 `components/YamlEditor.vue` 组件
+  - 集成 CodeMirror 6
+  - 支持 YAML 语法高亮和主题
+
+- **项目配置**
+  - 更新 tsconfig.json 配置
+  - 更新 vite.config.ts 配置
+  - 添加缺失的依赖（js-yaml, codemirror, element-plus）
+
+- **服务状态**
+  - 后端 API: http://localhost:8000 (运行中)
+  - 前端开发: http://localhost:3001 (运行中)
+
+### 当前运行方式
+
+```bash
+# 后端服务
+cd /home/wangjian/agent_project_test/LensQuill
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate agent_debate
+python -m uvicorn api.routes:router --reload
+
+# 前端开发
+cd frontend
+npm run dev
+```

@@ -208,7 +208,7 @@ const readFileAsText = (file: File): Promise<string> => {
     const reader = new FileReader()
     reader.onload = (e) => resolve(e.target?.result as string)
     reader.onerror = (e) => reject(e)
-    reader.readAsText(file, 'gbk')
+    reader.readAsText(file, 'utf-8')
   })
 }
 </script>
