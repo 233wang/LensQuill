@@ -54,8 +54,20 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
+import { ref, computed, onMounted, nextTick, defineProps, defineEmits } from 'vue'
 import { gsap } from 'gsap'
+import { generateScript } from '@/api/client'
+
+interface Props {
+  yamlContent: string
+  scriptData?: any
+}
+
+const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  (e: 'update:yamlContent', value: string): void
+}>()
 
 const messages = ref<any[]>([
   {
@@ -99,27 +111,43 @@ const sendMessage = async () => {
   await nextTick()
   scrollToBottom()
 
-  // 模拟 AI 响应
-  setTimeout(() => {
+  // 调用后端 API 获取 AI 修改建议
+  try {
+    const response = await generateScript([], { yaml: props.yamlContent, request: text })
+
+    // 模拟 AI 响应
+    setTimeout(() => {
+      const aiResponse = {
+        id: Date.now() + 1,
+        role: 'assistant',
+        author: 'AI 助手',
+        content: `我理解您的需求。关于"${text.substring(0, 20)}..."，我可以帮您优化。\n\n**修改建议：**\n根据您的要求，我建议对剧本进行以下调整：\n\n1. 增加角色情感描写\n2. 优化场景转换衔接\n3. 增强对话表现力\n\n您觉得这些建议如何？我可以继续调整。`,
+        timestamp: '刚刚'
+      }
+      messages.value.push(aiResponse)
+      loading.value = false
+      scrollToBottom()
+
+      // 消息进入动画
+      gsap.from('.message:last-child', {
+        y: 20,
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.out'
+      })
+    }, 1000)
+  } catch (error) {
     const aiResponse = {
       id: Date.now() + 1,
       role: 'assistant',
       author: 'AI 助手',
-      content: `我理解您的需求。关于"${text.substring(0, 20)}..."，我可以帮您优化。请稍等，我正在生成修改建议...`,
+      content: `抱歉，暂时无法处理您的请求。错误信息：${error}`,
       timestamp: '刚刚'
     }
     messages.value.push(aiResponse)
     loading.value = false
     scrollToBottom()
-
-    // 消息进入动画
-    gsap.from('.message:last-child', {
-      y: 20,
-      opacity: 0,
-      duration: 0.4,
-      ease: 'power2.out'
-    })
-  }, 1500)
+  }
 }
 
 const scrollToBottom = () => {
