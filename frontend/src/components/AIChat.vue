@@ -35,17 +35,19 @@
     </div>
 
     <div class="chat-input">
-      <el-input
-        v-model="userInput"
-        type="textarea"
-        :rows="3"
-        placeholder="输入您的修改建议或问题..."
-        @keydown.enter.exact="sendMessage"
-      />
-      <div class="input-actions">
-        <el-button type="primary" @click="sendMessage" :loading="loading">
-          发送
-        </el-button>
+      <div class="input-container">
+        <textarea
+          v-model="userInput"
+          class="chat-textarea"
+          placeholder="输入您的修改建议或问题..."
+          @keydown="handleKeyDown"
+          rows="3"
+        />
+        <div class="input-actions">
+          <el-button type="primary" @click="sendMessage" :loading="loading">
+            发送
+          </el-button>
+        </div>
       </div>
     </div>
   </div>
@@ -123,6 +125,20 @@ const sendMessage = async () => {
 const scrollToBottom = () => {
   if (chatContainer.value) {
     chatContainer.value.scrollTop = chatContainer.value.scrollHeight
+  }
+}
+
+// 处理键盘事件：回车发送，shift+回车换行
+const handleKeyDown = (e: KeyboardEvent) => {
+  if (e.key === 'Enter') {
+    if (e.shiftKey) {
+      // shift+回车：换行
+      return
+    } else {
+      // 回车：发送消息
+      e.preventDefault()
+      sendMessage()
+    }
   }
 }
 
