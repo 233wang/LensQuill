@@ -13,30 +13,28 @@
       </div>
     </div>
 
-    <el-card class="editor-card" shadow="never">
-      <div class="editor-layout">
-        <!-- 左侧 YAML 编辑器 -->
-        <div class="editor-panel">
-          <div class="panel-header">
-            <h3>YAML 编辑</h3>
-            <span class="panel-hint">可手动编辑 YAML 内容</span>
-          </div>
-          <div class="editor-container">
-            <textarea
-              v-model="yamlContent"
-              class="editor-textarea"
-              placeholder="YAML 内容将在此处显示"
-              spellcheck="false"
-            />
-          </div>
+    <div class="editor-layout">
+      <!-- 左侧 YAML 编辑器 -->
+      <div class="editor-panel">
+        <div class="panel-header">
+          <h3>YAML 编辑</h3>
+          <span class="panel-hint">可手动编辑 YAML 内容</span>
         </div>
-
-        <!-- 右侧 AI 对话面板 -->
-        <div class="chat-panel">
-          <AIChat v-model:yaml-content="yamlContent" :script-data="scriptData" />
+        <div class="editor-container">
+          <textarea
+            v-model="yamlContent"
+            class="editor-textarea"
+            placeholder="YAML 内容将在此处显示"
+            spellcheck="false"
+          />
         </div>
       </div>
-    </el-card>
+
+      <!-- 右侧 AI 对话面板 -->
+      <div class="chat-panel">
+        <AIChat v-model:yaml-content="yamlContent" :script-data="scriptData" />
+      </div>
+    </div>
   </div>
 </template>
 
@@ -60,20 +58,11 @@ onMounted(() => {
     duration: 0.6,
     ease: 'power2.out'
   })
-
-  gsap.from('.editor-card', {
-    y: 30,
-    opacity: 0,
-    duration: 0.6,
-    delay: 0.2,
-    ease: 'power2.out'
-  })
 })
 
 // 页面离开清理
 onBeforeUnmount(() => {
   gsap.killTweensOf('.editor .header')
-  gsap.killTweensOf('.editor-card')
 })
 
 // 加载脚本数据
@@ -167,35 +156,29 @@ const handleSave = async () => {
   gap: 12px;
 }
 
-.editor-card {
-  background-color: oklch(18% 0.01 240);
-  border: 1px solid oklch(25% 0.01 240);
-  border-radius: 12px;
-  overflow: hidden;
-}
-
 .editor-layout {
   display: flex;
   gap: 24px;
-  height: 600px;
-  min-height: 400px;
+  min-height: 600px;
 }
 
 .editor-panel {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: oklch(15% 0.01 240);
+  background-color: oklch(18% 0.01 240);
   border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
   overflow: hidden;
 }
 
 .panel-header {
+  flex-shrink: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 12px 20px;
-  background-color: oklch(18% 0.01 240);
+  background-color: oklch(15% 0.01 240);
   border-bottom: 1px solid oklch(25% 0.01 240);
 }
 
@@ -213,15 +196,15 @@ const handleSave = async () => {
 
 .editor-container {
   flex: 1;
-  overflow: hidden;
+  overflow: auto;
 }
 
 .editor-textarea {
   width: 100%;
-  height: 100%;
+  min-height: 400px;
   background-color: oklch(12% 0.01 240);
-  border: 1px solid oklch(25% 0.01 240);
-  border-radius: 8px;
+  border: none;
+  border-radius: 0;
   color: oklch(95% 0.01 240);
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   font-size: 13px;
@@ -232,15 +215,15 @@ const handleSave = async () => {
 
 .editor-textarea:focus {
   outline: none;
-  border-color: oklch(60% 0.25 250);
 }
 
 .chat-panel {
   flex: 1;
   min-width: 350px;
-  height: 100%;
+  height: 600px;
   background-color: oklch(18% 0.01 240);
   border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
   overflow: hidden;
 }
 
