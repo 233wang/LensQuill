@@ -90,10 +90,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as yaml from 'js-yaml'
+import { gsap } from 'gsap'
 import YamlEditor from '@/components/YamlEditor.vue'
 
 const router = useRouter()
@@ -101,6 +102,33 @@ const yamlContent = ref('')
 const scriptData = ref<any>(null)
 
 onMounted(() => {
+  // 页面进入动画
+  gsap.from('.editor .header', {
+    y: -30,
+    opacity: 0,
+    duration: 0.6,
+    ease: 'power2.out'
+  })
+
+  gsap.from('.editor-card', {
+    y: 30,
+    opacity: 0,
+    duration: 0.6,
+    delay: 0.2,
+    ease: 'power2.out'
+  })
+
+  // YAML 内容加载动画
+  const textarea = document.querySelector('.editor-textarea')
+  if (textarea) {
+    gsap.from(textarea, {
+      opacity: 0,
+      duration: 0.5,
+      delay: 0.4,
+      ease: 'power2.out'
+    })
+  }
+
   const storedScript = localStorage.getItem('scriptData')
   if (storedScript) {
     try {
@@ -112,6 +140,13 @@ onMounted(() => {
       yamlContent.value = storedScript
     }
   }
+})
+
+// 页面离开清理
+onBeforeUnmount(() => {
+  gsap.killTweensOf('.editor .header')
+  gsap.killTweensOf('.editor-card')
+  gsap.killTweensOf('.editor-textarea')
 })
 
 const dumpYaml = (data: any): string => {
