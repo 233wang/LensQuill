@@ -257,8 +257,11 @@ const parseChapters = (content: string): any[] => {
     const chapterContent = content.substring(start, end)
 
     return {
+      index: index + 1,
       title: match[0],
       content: chapterContent,
+      length: chapterContent.length,
+      preview: chapterContent.substring(0, 80) + '...',
     }
   })
 }
