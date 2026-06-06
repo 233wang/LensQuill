@@ -218,8 +218,9 @@ const handleSave = async () => {
 .editor-textarea {
   width: 100%;
   height: 100%;
-  background-color: oklch(10% 0.01 240);
-  border: none;
+  background-color: oklch(12% 0.01 240);
+  border: 1px solid oklch(25% 0.01 240);
+  border-radius: 8px;
   color: oklch(95% 0.01 240);
   font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
   font-size: 13px;
@@ -230,11 +231,13 @@ const handleSave = async () => {
 
 .editor-textarea:focus {
   outline: none;
+  border-color: oklch(60% 0.25 250);
 }
 
 .chat-panel {
   flex: 1;
   min-width: 350px;
+  height: 100%;
 }
 
 :deep(.el-button) {
