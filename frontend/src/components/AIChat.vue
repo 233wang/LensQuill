@@ -118,11 +118,11 @@ const processMessage = (msg: any) => {
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
-    // 尝试多种方式获取标题
+    // 获取章节标题和索引
     const chapter = msg.chapter || {}
     const chapterTitle = chapter.chapter_title || chapter.title || msg.chapter_title || `第${msg.chapter_index}章`
-    console.log('chapter_complete 标题提取:', { chapter, chapterTitle })
-    addProgressMessage(`已完成：${chapterTitle}`)
+    const chapterIndex = msg.chapter_index || chapter.chapter_index || '未知'
+    addProgressMessage(`已完成第${chapterIndex}章：${chapterTitle}`)
   } else if (msg.type === 'processing_chapter') {
     addProgressMessage(`正在生成：${msg.chapter_title || `第${msg.chapter_index}章`}`)
   } else if (msg.type === 'init') {
