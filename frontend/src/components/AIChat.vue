@@ -109,13 +109,19 @@ const processedMessageCount = ref(0)
 const processMessage = (msg: any) => {
   if (!msg) return
 
+  // 调试日志
+  console.log('AIChat 处理消息:', msg.type, msg)
+
   // 处理章节流式消息
   if (msg.type === 'chapter_streaming') {
     addStreamingMessage(`正在生成 JSON...\n${msg.content.substring(Math.max(0, msg.content.length - 500))}`)
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
-    const chapterTitle = msg.chapter?.chapter_title || msg.chapter_title || `第${msg.chapter_index}章`
+    // 尝试多种方式获取标题
+    const chapter = msg.chapter || {}
+    const chapterTitle = chapter.chapter_title || chapter.title || msg.chapter_title || `第${msg.chapter_index}章`
+    console.log('chapter_complete 标题提取:', { chapter, chapterTitle })
     addProgressMessage(`已完成：${chapterTitle}`)
   } else if (msg.type === 'processing_chapter') {
     addProgressMessage(`正在生成：${msg.chapter_title || `第${msg.chapter_index}章`}`)
