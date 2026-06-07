@@ -45,9 +45,10 @@ body {
 }
 
 .el-header {
-  background-color: oklch(18% 0.01 240);
+  background: linear-gradient(180deg, oklch(18% 0.01 240) 0%, oklch(16% 0.01 240) 100%);
   color: oklch(95% 0.01 240);
   border-bottom: 1px solid oklch(25% 0.01 240);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-content {
@@ -55,29 +56,40 @@ body {
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  padding: 0 24px;
 }
 
 .header-content h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
-  color: oklch(95% 0.01 240);
+  background: linear-gradient(135deg, oklch(95% 0.01 240) 0%, oklch(60% 0.25 250) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .header-menu {
   border-bottom: none;
+  background: transparent;
 }
 
 :deep(.el-menu-item) {
   color: oklch(70% 0.01 240);
+  border-radius: 8px;
+  margin: 4px 0;
+  transition: all 0.3s ease;
 }
 
 :deep(.el-menu-item.is-active) {
-  color: oklch(60% 0.25 250);
-  background-color: oklch(20% 0.05 250);
+  color: oklch(95% 0.01 240);
+  background: linear-gradient(135deg, oklch(60% 0.25 250) 0%, oklch(55% 0.25 250) 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 :deep(.el-menu-item:hover) {
-  background-color: oklch(22% 0.01 240);
+  color: oklch(95% 0.01 240);
+  background: oklch(22% 0.01 240);
+  transform: translateX(4px);
 }
 </style>

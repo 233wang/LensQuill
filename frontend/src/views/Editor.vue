@@ -337,17 +337,29 @@ const handleSave = async () => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 24px;
+  padding: 20px;
+  background: linear-gradient(135deg, oklch(20% 0.05 250) 0%, oklch(18% 0.01 240) 100%);
+  border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
 }
 
 .header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: oklch(95% 0.01 240);
+  background: linear-gradient(135deg, oklch(95% 0.01 240) 0%, oklch(60% 0.25 250) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .actions {
   display: flex;
   gap: 12px;
+}
+
+.header-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .editor-layout {
@@ -360,10 +372,11 @@ const handleSave = async () => {
   flex: 1;
   display: flex;
   flex-direction: column;
-  background-color: oklch(18% 0.01 240);
+  background: linear-gradient(180deg, oklch(18% 0.01 240) 0%, oklch(16% 0.01 240) 100%);
   border-radius: 12px;
   border: 1px solid oklch(25% 0.01 240);
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .panel-header {
@@ -371,8 +384,8 @@ const handleSave = async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 20px;
-  background-color: oklch(15% 0.01 240);
+  padding: 16px 20px;
+  background: linear-gradient(135deg, oklch(15% 0.01 240) 0%, oklch(18% 0.01 240) 100%);
   border-bottom: 1px solid oklch(25% 0.01 240);
 }
 
@@ -383,9 +396,10 @@ const handleSave = async () => {
   color: oklch(95% 0.01 240);
 }
 
-.panel-hint {
-  font-size: 12px;
-  color: oklch(70% 0.01 240);
+.header-actions :deep(.el-button) {
+  padding: 6px 12px;
+  font-size: 13px;
+  border-radius: 6px;
 }
 
 .editor-container {
@@ -415,24 +429,44 @@ const handleSave = async () => {
   flex: 1;
   min-width: 350px;
   height: 600px;
-  background-color: oklch(18% 0.01 240);
+  background: linear-gradient(180deg, oklch(18% 0.01 240) 0%, oklch(16% 0.01 240) 100%);
   border-radius: 12px;
   border: 1px solid oklch(25% 0.01 240);
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-button) {
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
+  padding: 8px 16px;
 }
 
 :deep(.el-button--primary) {
-  background: oklch(60% 0.25 250);
+  background: linear-gradient(135deg, oklch(60% 0.25 250) 0%, oklch(55% 0.25 250) 100%);
   border-color: oklch(60% 0.25 250);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 :deep(.el-button--primary:hover) {
-  background: oklch(65% 0.25 250);
+  background: linear-gradient(135deg, oklch(65% 0.25 250) 0%, oklch(60% 0.25 250) 100%);
   border-color: oklch(65% 0.25 250);
+  transform: translateY(-1px);
+}
+
+:deep(.el-button--success) {
+  background: oklch(60% 0.25 140);
+  border-color: oklch(60% 0.25 140);
+}
+
+:deep(.el-button--info) {
+  background: oklch(40% 0.15 240);
+  border-color: oklch(40% 0.15 240);
+  color: oklch(90% 0.01 240);
+}
+
+:deep(.el-button--info:hover) {
+  background: oklch(45% 0.15 240);
+  border-color: oklch(45% 0.15 240);
 }
 </style>
