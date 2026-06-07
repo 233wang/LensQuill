@@ -61,9 +61,9 @@
     <div class="upload-info-card" v-if="isUploadMode && chapters.length === 0">
       <el-card shadow="never" type="info">
         <div class="upload-info-content">
-          <h3>大文件检测</h3>
+          <h3>文件已加载</h3>
           <p>检测到大文件（{{ Math.round(novelContent.length / 1024) }} KB），已加载文件内容。</p>
-          <p>由于章节数过多（{{ totalChapterCount }}章），已跳过详细章节列表显示。</p>
+          <p>文件包含 {{ totalChapterCount }} 章。</p>
           <div class="upload-actions">
             <el-button type="primary" @click="handleGenerateAll" :loading="generating">
               处理全部章节
