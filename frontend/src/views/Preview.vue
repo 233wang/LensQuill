@@ -151,18 +151,13 @@ const parseChapters = (content: string) => {
 
 // 加载章节
 const loadChapters = () => {
-  const storedContent = localStorage.getItem('novelContent')
   const storedChapters = localStorage.getItem('chapters')
 
   if (storedChapters) {
     chapters.value = JSON.parse(storedChapters)
-    novelContent.value = localStorage.getItem('novelContent') || ''
-  } else if (storedContent) {
-    novelContent.value = storedContent
-    parseChapters(storedContent)
+    // novelContent 不再使用，保持为空
   } else {
     chapters.value = []
-    novelContent.value = ''
   }
 }
 
