@@ -10,9 +10,7 @@
 
 观看 LensQuill 的演示视频：
 
-<div align="center">
-  <video src="docs/演示demo.mp4" controls width="80%"></video>
-</div>
+[![演示视频截图](docs/演示demo.mp4)](docs/演示demo.mp4)
 
 ## 项目简介
 
