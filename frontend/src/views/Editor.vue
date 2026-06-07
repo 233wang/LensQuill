@@ -85,13 +85,18 @@ const dumpYaml = (data: any): string => {
 const addChapterToScript = (chapter: any) => {
   currentChapter.value++
 
-  // 更新进度消息
-  progressMessages.value.push({
-    id: Date.now(),
-    type: 'chapter_complete',
-    chapter: chapter.chapter_title || `第${currentChapter.value}章`,
-    timestamp: '刚刚'
-  })
+  // 更新进度消息 - 只在后端没有发送 chapter_complete 时才发送
+  // 避免重复消息
+  const lastMsg = progressMessages.value[progressMessages.value.length - 1]
+  if (!lastMsg || lastMsg.type !== 'chapter_complete') {
+    progressMessages.value.push({
+      id: Date.now(),
+      type: 'chapter_complete',
+      chapter_index: currentChapter.value,
+      chapter_title: chapter.chapter_title || chapter.title || `第${currentChapter.value}章`,
+      timestamp: '刚刚'
+    })
+  }
 
   // 如果 scriptData 为空，创建新脚本
   if (!scriptData.value) {
