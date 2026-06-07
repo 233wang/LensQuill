@@ -93,6 +93,8 @@ class StreamingScriptGenerator:
                 "content": full_content,
                 "is_complete": False
             }
+            # 强制刷新，确保消息立即发送
+            await asyncio.sleep(0.01)
 
         # 流式结束后，解析完整 JSON
         chapter_script = self._parse_chapter_response(full_content, chapter_index)
@@ -155,9 +157,12 @@ class StreamingScriptGenerator:
                                         delta = data["choices"][0].get("delta", {})
                                         content = delta.get("content", "")
                                         if content:
+                                            print(f"收到模型输出: {content[:50]}...")
                                             yield content
-                                except (json.JSONDecodeError, UnicodeDecodeError):
-                                    pass
+                                        else:
+                                            print(f"收到空内容的delta: {delta}")
+                                except (json.JSONDecodeError, UnicodeDecodeError) as e:
+                                    print(f"解析失败: {e}, line: {line_str[:100]}")
         except Exception as e:
             print(f"API调用失败: {e}")
             yield f"【错误: {str(e)}】"
