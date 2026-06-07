@@ -54,7 +54,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, defineProps, defineEmits, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, defineProps, defineEmits, watch, onBeforeUnmount } from 'vue'
 import { gsap } from 'gsap'
 import { generateScript } from '@/api/client'
 
@@ -85,26 +85,53 @@ const loading = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
 
 // 监听 SSE 消息
-watch(() => props.progressMessages, (newVal) => {
-  if (newVal && newVal.length > 0) {
-    const lastMsg = newVal[newVal.length - 1]
+const processedMessageCount = ref(0)
 
-    // 处理章节流式消息
-    if (lastMsg.type === 'chapter_streaming') {
-      addStreamingMessage(`正在生成 JSON...\n${lastMsg.content.substring(Math.max(0, lastMsg.content.length - 500))}`)
-    }
-    // 处理进度消息
-    else if (lastMsg.type === 'chapter_complete') {
-      addProgressMessage(`已完成：${lastMsg.chapter.chapter_title || `第${lastMsg.chapter_index}章`}`)
-    } else if (lastMsg.type === 'processing_chapter') {
-      addProgressMessage(`正在生成：${lastMsg.chapter_title}`)
-    } else if (lastMsg.type === 'init') {
-      addProgressMessage(`开始生成剧本，共 ${lastMsg.total_chapters} 章`)
-    } else if (lastMsg.type === 'characters_loaded') {
-      addProgressMessage(`识别到 ${lastMsg.count} 个角色`)
-    }
+const processMessage = (msg: any) => {
+  if (!msg) return
+
+  // 处理章节流式消息
+  if (msg.type === 'chapter_streaming') {
+    addStreamingMessage(`正在生成 JSON...\n${msg.content.substring(Math.max(0, msg.content.length - 500))}`)
   }
-}, { immediate: true, deep: true })
+  // 处理进度消息
+  else if (msg.type === 'chapter_complete') {
+    addProgressMessage(`已完成：${msg.chapter.chapter_title || `第${msg.chapter_index}章`}`)
+  } else if (msg.type === 'processing_chapter') {
+    addProgressMessage(`正在生成：${msg.chapter_title}`)
+  } else if (msg.type === 'init') {
+    addProgressMessage(`开始生成剧本，共 ${msg.total_chapters} 章`)
+  } else if (msg.type === 'characters_loaded') {
+    addProgressMessage(`识别到 ${msg.count} 个角色`)
+  } else if (msg.type === 'complete') {
+    addProgressMessage('剧本生成完成！')
+  }
+}
+
+watch(() => {
+  const msgs = props.progressMessages || []
+  return {
+    length: msgs.length,
+    lastId: msgs.length > 0 ? msgs[msgs.length - 1].id : null,
+    lastType: msgs.length > 0 ? msgs[msgs.length - 1].type : null
+  }
+}, (newVal, oldVal) => {
+  // 只处理新消息
+  const startIndex = oldVal ? processedMessageCount.value : 0
+  const msgs = props.progressMessages || []
+
+  for (let i = startIndex; i < msgs.length; i++) {
+    processMessage(msgs[i])
+    processedMessageCount.value = i + 1
+  }
+}, { immediate: false, deep: true })
+
+// 组件挂载时处理已有的消息
+onMounted(() => {
+  const msgs = props.progressMessages || []
+  processedMessageCount.value = msgs.length
+  msgs.forEach(processMessage)
+})
 
 // 添加流式消息
 const addStreamingMessage = (content: string) => {

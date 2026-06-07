@@ -141,26 +141,6 @@ const handleStorageChange = (e: StorageEvent) => {
   }
 }
 
-onMounted(() => {
-  window.addEventListener('storage', handleStorageChange)
-
-  // 检查是否有进行中的生成
-  const chaptersStr = localStorage.getItem('chapters')
-  const scriptStr = localStorage.getItem('scriptData')
-  if (chaptersStr && !scriptStr) {
-    // 有章节但没有脚本，说明正在生成，连接 SSE
-    connectSSE()
-  }
-
-  // 页面进入动画
-  gsap.from('.editor .header', {
-    y: -30,
-    opacity: 0,
-    duration: 0.6,
-    ease: 'power2.out'
-  })
-})
-
 // 连接 SSE 流式生成
 const connectSSE = () => {
   const eventSource = new EventSource('/api/generate')
@@ -168,6 +148,7 @@ const connectSSE = () => {
   eventSource.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data)
+      console.log('收到 SSE 消息:', data)
 
       // 推送到 AI 对话框显示
       progressMessages.value.push(data)
@@ -190,10 +171,47 @@ const connectSSE = () => {
     console.error('EventSource error:', error)
     eventSource.close()
   }
+
+  // 返回 eventSource 供卸载时关闭
+  return eventSource
 }
+
+let sseSource: EventSource | null = null
+
+onMounted(() => {
+  window.addEventListener('storage', handleStorageChange)
+
+  // 检查是否有进行中的生成
+  const chaptersStr = localStorage.getItem('chapters')
+  const scriptStr = localStorage.getItem('scriptData')
+  if (chaptersStr && !scriptStr) {
+    // 有章节但没有脚本，说明正在生成，连接 SSE
+    sseSource = connectSSE()
+  } else if (scriptStr) {
+    // 脚本已生成完毕，加载它
+    try {
+      scriptData.value = JSON.parse(scriptStr)
+      yamlContent.value = dumpYaml(scriptData.value)
+    } catch {
+      yamlContent.value = scriptStr
+      scriptData.value = null
+    }
+  }
+
+  // 页面进入动画
+  gsap.from('.editor .header', {
+    y: -30,
+    opacity: 0,
+    duration: 0.6,
+    ease: 'power2.out'
+  })
+})
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
+  if (sseSource) {
+    sseSource.close()
+  }
   gsap.killTweensOf('.editor .header')
 })
 
