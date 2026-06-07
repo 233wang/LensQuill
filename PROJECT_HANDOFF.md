@@ -741,3 +741,36 @@ OPENAI_API_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
 OPENAI_API_KEY=your_api_key_here
 OPENAI_MODEL_ID=astron-code-latest
 ```
+
+---
+
+## 问题记录（2026-06-07）
+
+### 问题：流式剧本生成功能不可用
+
+**描述：**
+- 用户从首页完整进行了流程（粘贴小说 → 开始处理 → 预览页 → 生成剧本）
+- 进入编辑页后，AI对话框中显示"当前没有正在生成的剧本。"
+- 没有实时输出，也没有剧本生成结果
+
+**当前状态：**
+- 后端 SSE 流式输出已实现
+- 大模型 API 调用正常
+- 前端 SSE 连接代码已添加
+- AI对话框未显示任何流式进度
+
+**问题分析方向：**
+1. 前端 `Editor.vue` 中的 SSE 连接代码可能没有正确触发
+2. `progressMessages` 传递给 `AIChat.vue` 的逻辑可能有问题
+3. `AIChat.vue` 中监听 SSE 消息的 `watch` 可能没有正确处理
+
+**需要检查的文件：**
+- `frontend/src/views/Editor.vue` - SSE 连接和消息传递
+- `frontend/src/components/AIChat.vue` - SSE 消息监听和显示
+- `frontend/src/api/client.ts` - API 客户端配置
+
+**建议修复步骤：**
+1. 检查浏览器控制台是否有错误信息
+2. 检查 Network 面板是否有 SSE 连接
+3. 验证 `progressMessages` 是否正确传递到 `AIChat.vue`
+4. 确认 SSE 消息格式是否正确
