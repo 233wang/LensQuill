@@ -181,6 +181,11 @@ const loadChapters = () => {
 		gsap.killTweensOf('.chapter-list .chapter-item')
 	})
 
+// 处理返回按钮
+const handleBack = () => {
+  router.push('/')
+}
+
 // 处理生成剧本按钮点击
 const handleGenerate = async () => {
   if (chapters.value.length < 3) {
