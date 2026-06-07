@@ -114,6 +114,7 @@ const processMessage = (msg: any) => {
 
   // 处理章节流式消息
   if (msg.type === 'chapter_streaming') {
+    console.log('触发打字机效果，内容长度:', msg.content.length)
     // 显示当前生成进度
     addStreamingMessage(`正在生成第 ${msg.chapter_index} 章...\n\n${msg.content.substring(Math.max(0, msg.content.length - 300))}`)
   }
