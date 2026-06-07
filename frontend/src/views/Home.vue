@@ -55,6 +55,25 @@
           </div>
         </div>
 
+        <!-- 统计信息 -->
+        <div v-if="totalChapterCount > 0" class="stats-card">
+          <div class="stats-title">文件分析结果</div>
+          <div class="stats-grid">
+            <div class="stat-item">
+              <div class="stat-label">章节数</div>
+              <div class="stat-value">{{ totalChapterCount }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">总字数</div>
+              <div class="stat-value">{{ totalWords }}</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-label">文件名</div>
+              <div class="stat-value">{{ selectedFile?.name || '未知' }}</div>
+            </div>
+          </div>
+        </div>
+
         <div class="actions">
           <el-button
             type="primary"
@@ -114,6 +133,8 @@ const textContent = ref('')
 const fileList = ref<any[]>([])
 const selectedFile = ref<File | null>(null)
 const processing = ref(false)
+const totalChapterCount = ref(0)
+const totalWords = ref(0)
 
 const textLength = computed(() => textContent.value.length)
 const estimatedChapters = computed(() => {
@@ -221,8 +242,13 @@ const handleProcess = async () => {
 
     const chapters = parseChapters(content)
 
-    if (chapters.length < 3) {
-      alert('至少需要3个章节才能生成剧本')
+    // 更新统计信息
+    totalChapterCount.value = chapters.length
+    totalWords.value = chapters.reduce((sum, c) => sum + c.length, 0)
+
+    // 不再限制至少3个章节，允许用户上传任何数量的章节
+    if (chapters.length === 0) {
+      alert('未识别到任何章节，请检查文件格式')
       processing.value = false
       return
     }
@@ -388,6 +414,44 @@ const readFileAsText = (file: File): Promise<string> => {
 
 .action-button {
   flex: 1;
+}
+
+.stats-card {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(180deg, oklch(18% 0.01 240) 0%, oklch(16% 0.01 240) 100%);
+  border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
+}
+
+.stats-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: oklch(95% 0.01 240);
+  margin-bottom: 16px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: oklch(70% 0.01 240);
+  margin-bottom: 4px;
+}
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: oklch(60% 0.25 250);
 }
 
 .features {
