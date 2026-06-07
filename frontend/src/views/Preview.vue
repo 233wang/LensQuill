@@ -139,37 +139,36 @@ const loadChapters = () => {
 
 	// 初始化加载
 	onMounted(() => {
-		loadChapters()
-	})
-
-	// 页面进入动画
-	onMounted(() => {
-		// 确保章节卡片正确渲染后再执行动画
 		nextTick(() => {
-			gsap.from('.preview .header', {
-				y: -30,
-				opacity: 0,
-				duration: 0.6,
-				ease: 'power2.out'
-			})
+			loadChapters()
 
-			gsap.from('.summary-card', {
-				y: 30,
-				opacity: 0,
-				duration: 0.6,
-				delay: 0.2,
-				ease: 'power2.out'
-			})
+			// 章节数据加载后，执行动画
+			nextTick(() => {
+				gsap.from('.preview .header', {
+					y: -30,
+					opacity: 0,
+					duration: 0.6,
+					ease: 'power2.out'
+				})
 
-			// 章节列表动画
-			const cards = document.querySelectorAll('.chapter-item')
-			cards.forEach((card, index) => {
-				gsap.from(card, {
+				gsap.from('.summary-card', {
 					y: 30,
 					opacity: 0,
-					duration: 0.5,
-					delay: 0.6 + index * 0.1,
+					duration: 0.6,
+					delay: 0.2,
 					ease: 'power2.out'
+				})
+
+				// 章节列表动画
+				const cards = document.querySelectorAll('.chapter-item')
+				cards.forEach((card, index) => {
+					gsap.from(card, {
+						y: 30,
+						opacity: 0,
+						duration: 0.5,
+						delay: 0.6 + index * 0.1,
+						ease: 'power2.out'
+					})
 				})
 			})
 		})
