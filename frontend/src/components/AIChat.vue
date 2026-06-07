@@ -105,6 +105,7 @@ const chatContainer = ref<HTMLElement | null>(null)
 
 // 监听 SSE 消息
 const processedMessageCount = ref(0)
+const streamingMessage = ref<any>(null)  // 用于跟踪当前的流式消息
 
 const processMessage = (msg: any) => {
   if (!msg) return
@@ -112,14 +113,52 @@ const processMessage = (msg: any) => {
   // 调试日志
   console.log('AIChat 处理消息:', msg.type, msg)
 
-  // 处理章节流式消息
+  // 处理章节流式消息 - 追加到同一条消息
   if (msg.type === 'chapter_streaming') {
-    console.log('触发打字机效果，内容长度:', msg.content.length)
-    // 显示当前生成进度
-    addStreamingMessage(`正在生成第 ${msg.chapter_index} 章...\n\n${msg.content.substring(Math.max(0, msg.content.length - 300))}`)
+    console.log('收到流式内容，长度:', msg.content.length, '内容:', msg.content.substring(0, 50))
+
+    if (!streamingMessage.value) {
+      // 创建新的流式消息
+      const msgObj = {
+        id: Date.now(),
+        role: 'assistant',
+        author: '模型输出',
+        content: '',
+        timestamp: '刚刚',
+        isStreaming: true,
+        fullContent: ''
+      }
+      messages.value.push(msgObj)
+      streamingMessage.value = msgObj
+
+      // 启动打字机效果
+      setTimeout(() => {
+        let currentText = ''
+        const speed = 30  // 打字速度（毫秒/字符）
+        let index = 0
+
+        const typeWriter = () => {
+          if (index < msgObj.fullContent.length) {
+            currentText += msgObj.fullContent.charAt(index)
+            msgObj.content = currentText
+            index++
+            scrollToBottom()
+            setTimeout(typeWriter, speed)
+          }
+        }
+
+        typeWriter()
+      }, 100)
+    }
+
+    // 追加内容
+    streamingMessage.value.fullContent += msg.content
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
+    // 结束流式消息
+    streamingMessage.value = null
+
     // 获取章节标题和索引
     const chapter = msg.chapter || {}
     const chapterTitle = chapter.chapter_title || chapter.title || msg.chapter_title || `第${msg.chapter_index}章`
@@ -160,41 +199,6 @@ onMounted(() => {
   processedMessageCount.value = msgs.length
   msgs.forEach(processMessage)
 })
-
-// 添加流式消息（打字机效果）
-const addStreamingMessage = (content: string) => {
-  // 先添加一个空消息占位
-  const msg = {
-    id: Date.now(),
-    role: 'assistant',
-    author: '模型输出',
-    content: '',
-    timestamp: '刚刚',
-    isStreaming: true,
-    fullContent: content  // 保存完整内容
-  }
-  messages.value.push(msg)
-
-  // 打字机效果：逐字显示
-  setTimeout(() => {
-    let currentText = ''
-    const text = content
-    const speed = 30  // 打字速度（毫秒/字符）
-    let index = 0
-
-    const typeWriter = () => {
-      if (index < text.length) {
-        currentText += text.charAt(index)
-        msg.content = currentText  // 更新响应式数据
-        index++
-        scrollToBottom()
-        setTimeout(typeWriter, speed)
-      }
-    }
-
-    typeWriter()
-  }, 100)
-}
 
 // 添加进度消息
 const addProgressMessage = (content: string) => {

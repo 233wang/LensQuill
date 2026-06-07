@@ -86,21 +86,23 @@ class StreamingScriptGenerator:
 
         # 收集流式输出
         full_content = ""
-        chunk_count = 0
+        last_content_length = 0
         async for chunk in self._call_llm_stream_async(prompt):
-            chunk_count += 1
             full_content += chunk
-            # 实时推送当前生成的文本（非完整 JSON）
+            # 只推送新增的部分（增量打字机效果）
+            new_content = full_content[last_content_length:]
+            last_content_length = len(full_content)
+
             yield {
                 "type": "chapter_streaming",
                 "chapter_index": chapter_index,
-                "content": full_content,
+                "content": new_content,  # 只发送新增内容
                 "is_complete": False
             }
             # 强制刷新，确保消息立即发送
             await asyncio.sleep(0.01)
 
-        print(f"第 {chapter_index} 章生成完成，共 {chunk_count} 个chunk，内容长度: {len(full_content)}")
+        print(f"第 {chapter_index} 章生成完成，内容长度: {len(full_content)}")
 
         # 流式结束后，解析完整 JSON
         chapter_script = self._parse_chapter_response(full_content, chapter_index)
