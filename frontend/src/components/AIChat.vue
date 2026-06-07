@@ -105,19 +105,6 @@ watch(() => props.progressMessages, (newVal) => {
     }
   }
 }, { immediate: true, deep: true })
-    }
-    // 处理进度消息
-    else if (lastMsg.type === 'chapter_complete') {
-      addProgressMessage(`已完成：${lastMsg.chapter.chapter_title || `第${lastMsg.chapter_index}章`}`)
-    } else if (lastMsg.type === 'processing_chapter') {
-      addProgressMessage(`正在生成：${lastMsg.chapter_title}`)
-    } else if (lastMsg.type === 'init') {
-      addProgressMessage(`开始生成剧本，共 ${lastMsg.total_chapters} 章`)
-    } else if (lastMsg.type === 'characters_loaded') {
-      addProgressMessage(`识别到 ${lastMsg.count} 个角色`)
-    }
-  }
-}, { deep: true })
 
 // 添加流式消息
 const addStreamingMessage = (content: string) => {
