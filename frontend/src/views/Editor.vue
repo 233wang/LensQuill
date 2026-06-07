@@ -18,7 +18,10 @@
       <div class="editor-panel">
         <div class="panel-header">
           <h3>YAML 编辑</h3>
-          <span class="panel-hint">实时显示生成进度</span>
+          <div class="header-actions">
+            <el-button size="small" @click="handleBackPreview">返回预览</el-button>
+            <el-button size="small" @click="handleBackHome" type="info">返回首页</el-button>
+          </div>
         </div>
         <div class="editor-container">
           <textarea
@@ -281,6 +284,14 @@ onBeforeUnmount(() => {
 
 const handleBack = () => {
   router.push('/preview')
+}
+
+const handleBackPreview = () => {
+  router.push('/preview')
+}
+
+const handleBackHome = () => {
+  router.push('/')
 }
 
 const handleDownload = () => {
