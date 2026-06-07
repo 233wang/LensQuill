@@ -172,19 +172,19 @@ onMounted(() => {
       timestamp: '刚刚'
     })
   }
-})
 
-  gsap.killTweensOf('.editor .header')
-})
-
-// 初始化 onMounted 动画
-onMounted(() => {
+  // 页面进入动画
   gsap.from('.editor .header', {
     y: -30,
     opacity: 0,
     duration: 0.6,
     ease: 'power2.out'
   })
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('storage', handleStorageChange)
+  gsap.killTweensOf('.editor .header')
 })
 
 const handleBack = () => {
