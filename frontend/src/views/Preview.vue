@@ -53,13 +53,15 @@
     <el-card class="chapters-card" shadow="never">
       <!-- 章节列表头部 -->
       <div class="chapter-header">
-        <el-checkbox
-          v-model="selectAll"
-          @change="toggleSelectAll"
-          :indeterminate="selectedChapters.length > 0 && selectedChapters.length < chapters.length"
-        >
-          全选
-        </el-checkbox>
+        <div class="select-all-container">
+          <el-checkbox
+            v-model="selectAll"
+            @change="handleSelectAllChange"
+            :indeterminate="selectedChapters.length > 0 && selectedChapters.length < chapters.length"
+          >
+            全选
+          </el-checkbox>
+        </div>
         <span class="selected-count">
           已选择: {{ selectedChapters.length }} / {{ chapters.length }} 章
         </span>
@@ -72,13 +74,12 @@
           :class="{ 'selected': selectedChapters.includes(chapter.index) }"
           v-for="(chapter, index) in chapters"
           :key="chapter.index"
-          @click="toggleChapterSelection(chapter.index)"
         >
           <div class="chapter-checkbox">
             <el-checkbox
               v-model="selectedChapters"
               :label="chapter.index"
-              @click.stop
+              @change="handleSelectionChange"
             />
           </div>
           <div class="chapter-index">
@@ -219,14 +220,19 @@ const loadChapters = () => {
 		console.log('已选择章节:', selectedChapters.value)
 	}
 
-	// 全选/全不选
-	const toggleSelectAll = () => {
-		if (selectedChapters.value.length === chapters.value.length) {
-			selectedChapters.value = []
-		} else {
+	// 处理全选变化
+	const handleSelectAllChange = (val: boolean) => {
+		if (val) {
 			selectedChapters.value = chapters.value.map(c => c.index)
+		} else {
+			selectedChapters.value = []
 		}
-		console.log('全选/全不选:', selectedChapters.value)
+		console.log('全选变化:', val, selectedChapters.value)
+	}
+
+	// 处理单个章节选择变化
+	const handleSelectionChange = (val: any) => {
+		console.log('单个章节选择变化:', val, selectedChapters.value)
 	}
 
 	// 页面离开清理
