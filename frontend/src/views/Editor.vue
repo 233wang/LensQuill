@@ -263,8 +263,17 @@ const handleStorageChange = (e: StorageEvent) => {
 const connectSSE = () => {
   console.log('开始连接 SSE...')
 
-  // 从 localStorage 获取 chapters
-  const chaptersStr = localStorage.getItem('chapters')
+  // 从 localStorage 或 sessionStorage 获取 chapters（根据模式）
+  let chaptersStr = localStorage.getItem('chapters')
+  const savedContent = sessionStorage.getItem('uploadedFileContent')
+  if (savedContent && savedContent.length > 0) {
+    // 上传模式：从 sessionStorage 读取
+    const sessionChapters = sessionStorage.getItem('chapters_in_session')
+    if (sessionChapters) {
+      chaptersStr = sessionChapters
+      console.log('上传模式：从 sessionStorage 读取 chapters')
+    }
+  }
   const chapters = JSON.parse(chaptersStr || '[]')
 
   console.log('发送 POST 请求触发生成...')

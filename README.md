@@ -1,6 +1,16 @@
-# AI 小说转剧本工具
+# LensQuill - AI 小说转剧本工具
 
-将3个章节以上的小说文本自动转换为结构化YAML格式剧本的AI工具。
+将小说文本自动转换为结构化YAML格式剧本的AI工具。
+
+[![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.109.0-green.svg)](https://fastapi.tiangolo.com)
+[![Vue 3](https://img.shields.io/badge/Vue.js-3.3+-green.svg)](https://vuejs.org/)
+
+## 演示视频
+
+观看 LensQuill 的演示视频：
+
+<video src="docs/演示demo.mp4" controls width="100%"></video>
 
 ## 项目简介
 
@@ -8,34 +18,37 @@
 
 ### 核心特性
 
-- 支持3个及以上章节的小说输入
-- 自动章节解析
-- **按章节整体生成剧本** - 每个章节都是完整的、可独立阅读的单元
-- AI角色识别与属性定义
-- 场景与分镜自动设计
-- 包含完整剧本要素：动作、对话、特效、音效
+- 支持上传 .txt/.md 文件或粘贴小说文本
+- 自动章节解析（支持中英文数字章节标题）
+- 智能人物、场景识别
+- **流式生成** - 实时查看AI生成进度
+- 打字机效果显示模型原始输出
+- 可视化章节选择（支持选择任意章节处理）
+- **撤销/重做** - YAML编辑器支持多步撤销
 - YAML格式输出
 - 可直接编辑使用的剧本初稿
 
 ## 技术栈
 
-- 后端: Python + FastAPI
+- 后端: Python 3.9 + FastAPI
 - AI: 讯飞星火API (astron-code-latest)
-- 前端: Vue 3 + Pinia + Element Plus
+- 前端: Vue 3 + Composition API + Element Plus + Pinia
 - 数据格式: YAML
+- 动画: GSAP
+- 代码编辑: CodeMirror 6
 
 ## 安装方式
 
 ```bash
 # 克隆仓库
-git clone https://github.com/your-username/ai-novel-to-script.git
-cd ai-novel-to-script
+git clone https://github.com/233wang/LensQuill.git
+cd LensQuill
 
-# 创建虚拟环境
-conda create -n lensquill python=3.9
-conda activate lensquill
+# 创建并激活虚拟环境（推荐使用 venv）
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
-# 安装依赖
+# 安装后端依赖
 pip install -r requirements.txt
 
 # 配置环境变量
@@ -43,17 +56,29 @@ cp .env.example .env
 # 编辑.env文件，填入讯飞星火API密钥
 ```
 
+### 前端安装
+
+```bash
+cd frontend
+npm install
+```
+
 ## 运行方式
 
 ```bash
 # 启动后端服务
-python -m api.main
+python -m uvicorn api.routes:router --host 0.0.0.0 --port 8000 --reload
 
-# 前端开发服务器
+# 前端开发服务器（需要先安装依赖）
 cd frontend
-npm install
 npm run dev
 ```
+
+访问地址：
+- 前端: http://localhost:3001/
+- 后端 API: http://localhost:8000
+
+**注意：** 前端默认运行在 3001 端口，API 请求会通过 Vite 代理转发到后端 8000 端口。
 
 ## 项目结构
 
@@ -73,11 +98,13 @@ npm run dev
 
 ## 使用流程
 
-1. **输入小说** - 在首页粘贴3章以上的小说文本
-2. **章节预览** - 查看自动分割的章节列表
-3. **生成剧本** - 点击"生成剧本"按钮
-4. **编辑剧本** - 在YAML编辑器中微调内容
-5. **AI对话** - 与AI助手对话，优化剧本细节
+1. **访问首页** - 打开 http://localhost:3001/
+2. **输入小说** - 粘贴小说文本或上传 .txt/.md 文件
+3. **章节预览** - 查看自动分割的章节列表
+4. **生成剧本** - 选择需要处理的章节（最多5章），点击"生成剧本"
+5. **查看进度** - 在编辑页实时查看AI生成进度和打字机效果
+6. **编辑剧本** - 在YAML编辑器中撤销/重做修改，调整内容
+7. **AI对话** - 与AI助手对话，优化剧本细节
 
 ## YAML输出格式
 
@@ -90,6 +117,19 @@ npm run dev
 - 所有文本使用中文，保持文学性和剧本格式的平衡
 
 详见 `docs/yaml_schema.md`。
+
+## 环境变量配置
+
+在 `.env` 文件中配置以下环境变量：
+
+```env
+# 讯飞星火API配置（兼容 OpenAI 格式）
+OPENAI_API_KEY=your_api_key_here
+OPENAI_API_URL=https://maas-coding-api.cn-huabei-1.xf-yun.com/v2
+OPENAI_MODEL_ID=qwen3.6-35b-a3b
+```
+
+**注意：** 如果不配置 API 密钥，工具仍可运行，但会使用降级模式（简单规则提取）而不是 AI 智能分析。
 
 ## 示例
 
@@ -140,6 +180,40 @@ script:
                 - character: "白柳"
                   line: "这是哪里？我为什么在这里？"
 ```
+
+## 快速开始
+
+### 1. 安装依赖
+
+```bash
+# 后端
+pip install -r requirements.txt
+
+# 前端
+cd frontend && npm install
+```
+
+### 2. 配置 API 密钥
+
+```bash
+cp .env.example .env
+# 编辑 .env，填入您的讯飞星火 API 密钥
+```
+
+### 3. 运行服务
+
+```bash
+# 终端 1：启动后端
+python -m uvicorn api.routes:router --host 0.0.0.0 --port 8000 --reload
+
+# 终端 2：启动前端
+cd frontend
+npm run dev
+```
+
+### 4. 使用工具
+
+打开浏览器访问 `http://localhost:3001/`，开始您的剧本创作之旅！
 
 ## 开发计划
 

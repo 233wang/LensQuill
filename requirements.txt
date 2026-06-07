@@ -3,8 +3,9 @@ fastapi==0.109.0
 uvicorn==0.27.0
 
 # AI API Integration
-openai>=1.0
+# openai>=1.0  # 如需使用 OpenAI 客户端可启用，目前使用 requests 直接调用
 requests>=2.31.0
+aiohttp>=3.8.0  # 异步 HTTP 客户端，用于流式 API 调用
 
 # YAML Processing
 pyyaml>=6.0
@@ -19,3 +20,6 @@ txt-to-epub-converter>=0.2.0
 # Utilities
 python-dotenv>=1.0.0
 chardet>=5.0
+
+# Testing
+pytest>=7.0.0

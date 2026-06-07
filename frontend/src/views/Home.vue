@@ -151,6 +151,12 @@ const canSubmit = computed(() => {
 })
 
 const handleFileChange = async (file: UploadFile) => {
+  // 切换到上传模式时，清空粘贴输入框，并清理粘贴模式的数据
+  inputMethod.value = 'upload'
+  textContent.value = ''
+  sessionStorage.removeItem('uploadedFileContent')
+  sessionStorage.removeItem('uploadedFileInfo')
+
   selectedFile.value = file.raw
   // 上传文件后立即解析并显示分析结果
   try {
@@ -162,7 +168,6 @@ const handleFileChange = async (file: UploadFile) => {
     console.log('文件解析完成:', chapters.length, '个章节, 总字数:', totalWords.value)
 
     // 将文件对象和内容存储到 sessionStorage
-    // 注意：File 对象会被转为 JSON，读取时需要重建
     const fileObj = {
       name: file.raw.name,
       size: file.raw.size,
@@ -259,6 +264,10 @@ const handleProcess = async () => {
     if (inputMethod.value === 'paste') {
       content = textContent.value
       filename = 'novel.txt'
+      // 清理 sessionStorage 中的文件相关数据
+      sessionStorage.removeItem('uploadedFileContent')
+      sessionStorage.removeItem('uploadedFileInfo')
+      console.log('粘贴模式：使用用户输入的文本，长度:', content.length)
     } else if (selectedFile.value) {
       console.log('使用已读取的文件内容, fileContent:', fileContent.value)
       content = fileContent.value || ''
@@ -267,6 +276,13 @@ const handleProcess = async () => {
       console.log('文件内容前100字符:', content.substring(0, 100))
     } else {
       console.log('未选择文件')
+    }
+
+    // 验证内容有效性
+    if (!content || content.length === 0) {
+      alert('内容为空，请检查输入')
+      processing.value = false
+      return
     }
 
     console.log('开始解析章节...')
@@ -284,9 +300,22 @@ const handleProcess = async () => {
       return
     }
 
-    // 不保存章节列表到 localStorage，避免超限
-    // 只保存文件名
+    // 保存文件名
     localStorage.setItem('filename', filename)
+
+    // 上传模式：只保存文件内容到 sessionStorage，不保存解析后的章节（避免空间不足）
+    // 粘贴模式：保存章节到 localStorage
+    if (inputMethod.value === 'upload') {
+      // 上传大文件处理：
+      // 1. 不预解析所有章节到内存
+      // 2. 只保存原始文件内容，按需解析
+      // 3. Preview 页面直接显示"处理全部章节"选项
+      sessionStorage.setItem('uploadedFileContent', content)
+      console.log('上传模式：保存原始文件内容到 sessionStorage')
+    } else {
+      localStorage.setItem('chapters', JSON.stringify(chapters))
+      console.log('粘贴模式：保存 chapters 到 localStorage, 数量:', chapters.length)
+    }
 
     console.log('跳转到 /preview...')
     router.push('/preview')
