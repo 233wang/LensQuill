@@ -175,10 +175,9 @@ const addStreamingMessage = (content: string) => {
   messages.value.push(msg)
 
   // 打字机效果：逐字显示
-  nextTick(() => {
+  setTimeout(() => {
     let currentText = ''
     const text = content
-    const element = document.querySelector('.message:last-child .message-body')
     const speed = 30  // 打字速度（毫秒/字符）
     let index = 0
 
@@ -193,7 +192,7 @@ const addStreamingMessage = (content: string) => {
     }
 
     typeWriter()
-  })
+  }, 100)
 }
 
 // 添加进度消息
