@@ -126,6 +126,7 @@ const loading = ref(false)
 const generating = ref(false)
 const novelContent = ref('')
 const selectedChapters = ref<number[]>([])  // 已选择的章节索引
+const selectedFile = ref<File | null>(null)  // 存储上传的文件对象
 
 // 解析章节
 const parseChapters = (content: string) => {
@@ -152,13 +153,35 @@ const parseChapters = (content: string) => {
 // 加载章节
 const loadChapters = () => {
   const storedChapters = localStorage.getItem('chapters')
+  const storedFilename = localStorage.getItem('filename')
 
   if (storedChapters) {
     chapters.value = JSON.parse(storedChapters)
-    // novelContent 不再使用，保持为空
+    // 从 localStorage 加载文件对象
+    if (storedFilename) {
+      // 从 sessionStorage 加载文件对象（如果存在）
+      const fileStr = sessionStorage.getItem('uploadedFile')
+      if (fileStr) {
+        selectedFile.value = JSON.parse(fileStr)
+      }
+    }
   } else {
     chapters.value = []
   }
+}
+
+// 从文件读取指定章节的内容
+const readFileContent = (): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    if (!selectedFile.value) {
+      reject(new Error('未找到上传的文件'))
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = (e) => resolve(e.target?.result as string)
+    reader.onerror = (e) => reject(e)
+    reader.readAsText(selectedFile.value, 'utf-8')
+  })
 }
 
 	// 初始化加载
@@ -245,13 +268,41 @@ const handleBack = () => {
 // 处理生成剧本按钮点击
 const handleGenerate = async () => {
   // 如果没有选择章节，使用全部章节
-  const chaptersToProcess = selectedChapters.value.length > 0
+  let chaptersToProcess = selectedChapters.value.length > 0
     ? chapters.value.filter(c => selectedChapters.value.includes(c.index))
     : chapters.value
+
+  // 限制最多处理5章
+  const MAX_CHAPTERS = 5
+  if (chaptersToProcess.length > MAX_CHAPTERS) {
+    alert(`最多只能选择 ${MAX_CHAPTERS} 章进行处理，请取消选择多余的章节`)
+    return
+  }
 
   if (chaptersToProcess.length < 1) {
     alert('请选择至少1个章节')
     return
+  }
+
+  // 如果章节没有内容，从文件重新读取
+  const chaptersWithoutContent = chaptersToProcess.filter(c => !c.content || c.content.length === 0)
+  if (chaptersWithoutContent.length > 0 && selectedFile.value) {
+    generating.value = true
+    try {
+      const content = await readFileContent()
+      const allChapters = parseChapters(content)
+      // 更新章节内容
+      chaptersToProcess = chaptersToProcess.map(chap => {
+        const fullChapter = allChapters.find(c => c.index === chap.index)
+        return fullChapter ? { ...fullChapter, content: fullChapter.content } : chap
+      })
+    } catch (error) {
+      alert('读取文件内容失败: ' + (error?.message || '未知错误'))
+      generating.value = false
+      return
+    } finally {
+      generating.value = false
+    }
   }
 
   generating.value = true

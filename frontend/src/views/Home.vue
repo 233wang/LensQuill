@@ -160,6 +160,14 @@ const handleFileChange = async (file: UploadFile) => {
     totalChapterCount.value = chapters.length
     totalWords.value = chapters.reduce((sum, c) => sum + c.length, 0)
     console.log('文件解析完成:', chapters.length, '个章节, 总字数:', totalWords.value)
+
+    // 将文件对象存储到 sessionStorage
+    const fileObj = {
+      name: file.raw.name,
+      size: file.raw.size,
+      type: file.raw.type
+    }
+    sessionStorage.setItem('uploadedFile', JSON.stringify(fileObj))
   } catch (error) {
     console.error('文件解析失败:', error)
   }
@@ -273,11 +281,14 @@ const handleProcess = async () => {
       return
     }
 
-    console.log('保存到 localStorage...')
-    // 只保存章节信息，不保存完整内容以避免 localStorage 超限
-    // 小说内容可以按需从原始文件重新读取或使用其他存储方式
+    // 保存章节信息
     localStorage.setItem('filename', filename)
     localStorage.setItem('chapters', JSON.stringify(chapters))
+
+    // 将文件对象存储到 sessionStorage 供 Preview 页面使用
+    // 注意：File 对象无法直接序列化，需要特殊处理
+    // 这里我们只保存文件信息，实际文件需要用户重新选择或使用其他方式
+    sessionStorage.setItem('uploadedFilename', filename)
 
     console.log('跳转到 /preview...')
     router.push('/preview')
