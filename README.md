@@ -89,10 +89,10 @@ npm run dev
 ├── frontend/          # 前端界面
 ├── cli/               # CLI工具
 ├── docs/              # 文档
-│   └── yaml_schema.md    # YAML Schema 详细说明
 ├── examples/          # 示例
 │   └── input_novel.txt   # 示例小说
 ├── tests/             # 测试
+├── yaml_schema.md     # YAML Schema 详细说明
 └── .env               # 环境变量配置
 ```
 
@@ -116,7 +116,7 @@ npm run dev
 - 分镜是剧本的基本单元，包含动作、对话、特效等要素
 - 所有文本使用中文，保持文学性和剧本格式的平衡
 
-详见 `docs/yaml_schema.md`。
+详见 [`yaml_schema.md`](yaml_schema.md)。
 
 ## 环境变量配置
 
