@@ -150,23 +150,23 @@ const parseChapters = (content: string) => {
   localStorage.setItem('chapters', JSON.stringify(chapters.value))
 }
 
-// 加载章节
+// 加载章节 - 从 sessionStorage 读取文件内容
 const loadChapters = () => {
-  const storedChapters = localStorage.getItem('chapters')
-  const storedFilename = localStorage.getItem('filename')
+  // 尝试从 sessionStorage 读取文件内容
+  const savedContent = sessionStorage.getItem('uploadedFileContent')
 
-  if (storedChapters) {
-    chapters.value = JSON.parse(storedChapters)
-    // 从 localStorage 加载文件对象
-    if (storedFilename) {
-      // 从 sessionStorage 加载文件对象（如果存在）
-      const fileStr = sessionStorage.getItem('uploadedFile')
-      if (fileStr) {
-        selectedFile.value = JSON.parse(fileStr)
-      }
-    }
+  if (savedContent) {
+    // 有保存的内容，直接解析
+    chapters.value = parseChapters(savedContent)
+    console.log('从 sessionStorage 加载章节:', chapters.value.length, '个')
   } else {
-    chapters.value = []
+    // 没有保存的内容，尝试从 localStorage 加载章节信息
+    const storedChapters = localStorage.getItem('chapters')
+    if (storedChapters) {
+      chapters.value = JSON.parse(storedChapters)
+    } else {
+      chapters.value = []
+    }
   }
 }
 

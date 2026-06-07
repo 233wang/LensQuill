@@ -161,13 +161,16 @@ const handleFileChange = async (file: UploadFile) => {
     totalWords.value = chapters.reduce((sum, c) => sum + c.length, 0)
     console.log('文件解析完成:', chapters.length, '个章节, 总字数:', totalWords.value)
 
-    // 将文件对象存储到 sessionStorage
+    // 将文件对象和内容存储到 sessionStorage
+    // 注意：File 对象会被转为 JSON，读取时需要重建
     const fileObj = {
       name: file.raw.name,
       size: file.raw.size,
-      type: file.raw.type
+      type: file.raw.type,
+      lastModified: file.raw.lastModified
     }
-    sessionStorage.setItem('uploadedFile', JSON.stringify(fileObj))
+    sessionStorage.setItem('uploadedFileInfo', JSON.stringify(fileObj))
+    sessionStorage.setItem('uploadedFileContent', content)
   } catch (error) {
     console.error('文件解析失败:', error)
   }
@@ -281,14 +284,9 @@ const handleProcess = async () => {
       return
     }
 
-    // 保存章节信息
+    // 不保存章节列表到 localStorage，避免超限
+    // 只保存文件名
     localStorage.setItem('filename', filename)
-    localStorage.setItem('chapters', JSON.stringify(chapters))
-
-    // 将文件对象存储到 sessionStorage 供 Preview 页面使用
-    // 注意：File 对象无法直接序列化，需要特殊处理
-    // 这里我们只保存文件信息，实际文件需要用户重新选择或使用其他方式
-    sessionStorage.setItem('uploadedFilename', filename)
 
     console.log('跳转到 /preview...')
     router.push('/preview')
