@@ -106,6 +106,7 @@ const chatContainer = ref<HTMLElement | null>(null)
 // 监听 SSE 消息
 const processedMessageCount = ref(0)
 const streamingMessage = ref<any>(null)  // 用于跟踪当前的流式消息
+let typeWriterInterval: number | null = null  // 打字机定时器
 
 const processMessage = (msg: any) => {
   if (!msg) return
@@ -125,38 +126,40 @@ const processMessage = (msg: any) => {
         author: '模型输出',
         content: '',
         timestamp: '刚刚',
-        isStreaming: true,
-        fullContent: ''
+        isStreaming: true
       }
       messages.value.push(msgObj)
       streamingMessage.value = msgObj
 
-      // 启动打字机效果
-      setTimeout(() => {
-        let currentText = ''
-        const speed = 30  // 打字速度（毫秒/字符）
-        let index = 0
-
-        const typeWriter = () => {
-          if (index < msgObj.fullContent.length) {
-            currentText += msgObj.fullContent.charAt(index)
-            msgObj.content = currentText
-            index++
-            scrollToBottom()
-            setTimeout(typeWriter, speed)
-          }
+      // 启动打字机效果定时器
+      typeWriterInterval = window.setInterval(() => {
+        const currentMsg = streamingMessage.value
+        if (currentMsg && currentMsg.fullContent && currentMsg.displayIndex < currentMsg.fullContent.length) {
+          // 追加下一个字符
+          const nextChar = currentMsg.fullContent[currentMsg.displayIndex]
+          currentMsg.content += nextChar
+          currentMsg.displayIndex++
+          scrollToBottom()
         }
-
-        typeWriter()
-      }, 100)
+      }, 30) // 每30ms追加一个字符
     }
 
-    // 追加内容
-    streamingMessage.value.fullContent += msg.content
+    // 追加内容到fullContent
+    if (streamingMessage.value) {
+      streamingMessage.value.fullContent = (streamingMessage.value.fullContent || '') + msg.content
+      // 初始化displayIndex
+      if (!streamingMessage.value.displayIndex) {
+        streamingMessage.value.displayIndex = 0
+      }
+    }
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
     // 结束流式消息
+    if (typeWriterInterval) {
+      clearInterval(typeWriterInterval)
+      typeWriterInterval = null
+    }
     streamingMessage.value = null
 
     // 获取章节标题和索引
@@ -174,6 +177,13 @@ const processMessage = (msg: any) => {
     addProgressMessage('剧本生成完成！')
   }
 }
+
+// 组件卸载时清理
+onBeforeUnmount(() => {
+  if (typeWriterInterval) {
+    clearInterval(typeWriterInterval)
+  }
+})
 
 watch(() => {
   const msgs = props.progressMessages || []
