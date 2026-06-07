@@ -51,9 +51,36 @@
 
     <!-- 章节列表卡片 -->
     <el-card class="chapters-card" shadow="never">
+      <!-- 章节列表头部 -->
+      <div class="chapter-header">
+        <el-checkbox
+          v-model="selectAll"
+          @change="toggleSelectAll"
+          :indeterminate="selectedChapters.length > 0 && selectedChapters.length < chapters.length"
+        >
+          全选
+        </el-checkbox>
+        <span class="selected-count">
+          已选择: {{ selectedChapters.length }} / {{ chapters.length }} 章
+        </span>
+      </div>
+
       <!-- 章节列表 -->
       <div class="chapter-list" v-if="chapters.length > 0">
-        <div class="chapter-item" v-for="(chapter, index) in chapters" :key="chapter.index">
+        <div
+          class="chapter-item"
+          :class="{ 'selected': selectedChapters.includes(chapter.index) }"
+          v-for="(chapter, index) in chapters"
+          :key="chapter.index"
+          @click="toggleChapterSelection(chapter.index)"
+        >
+          <div class="chapter-checkbox">
+            <el-checkbox
+              v-model="selectedChapters"
+              :label="chapter.index"
+              @click.stop
+            />
+          </div>
           <div class="chapter-index">
             <span class="index-number">{{ chapter.index }}</span>
           </div>
@@ -97,6 +124,7 @@ const chapters = ref<any[]>([])
 const loading = ref(false)
 const generating = ref(false)
 const novelContent = ref('')
+const selectedChapters = ref<number[]>([])  // 已选择的章节索引
 
 // 解析章节
 const parseChapters = (content: string) => {
@@ -180,6 +208,27 @@ const loadChapters = () => {
 		})
 	})
 
+	// 切换章节选择
+	const toggleChapterSelection = (chapterIndex: number) => {
+		const index = selectedChapters.value.indexOf(chapterIndex)
+		if (index > -1) {
+			selectedChapters.value.splice(index, 1)
+		} else {
+			selectedChapters.value.push(chapterIndex)
+		}
+		console.log('已选择章节:', selectedChapters.value)
+	}
+
+	// 全选/全不选
+	const toggleSelectAll = () => {
+		if (selectedChapters.value.length === chapters.value.length) {
+			selectedChapters.value = []
+		} else {
+			selectedChapters.value = chapters.value.map(c => c.index)
+		}
+		console.log('全选/全不选:', selectedChapters.value)
+	}
+
 	// 页面离开清理
 	onBeforeUnmount(() => {
 		gsap.killTweensOf('.preview .header')
@@ -194,15 +243,20 @@ const handleBack = () => {
 
 // 处理生成剧本按钮点击
 const handleGenerate = async () => {
-  if (chapters.value.length < 3) {
-    alert('至少需要3个章节才能生成剧本')
+  // 如果没有选择章节，使用全部章节
+  const chaptersToProcess = selectedChapters.value.length > 0
+    ? chapters.value.filter(c => selectedChapters.value.includes(c.index))
+    : chapters.value
+
+  if (chaptersToProcess.length < 1) {
+    alert('请选择至少1个章节')
     return
   }
 
   generating.value = true
 
   try {
-    const chapterObjects = chapters.value.map((chap) => ({
+    const chapterObjects = chaptersToProcess.map((chap) => ({
       title: chap.title,
       content: chap.content || '',
     }))
@@ -250,6 +304,15 @@ const totalLength = computed(() => {
 const avgLength = computed(() => {
   if (chapters.value.length === 0) return 0
   return Math.round(totalLength.value / chapters.value.length)
+})
+
+// 全选状态计算属性
+const selectAll = computed({
+  get: () => {
+    if (chapters.value.length === 0) return false
+    return selectedChapters.value.length === chapters.value.length
+  },
+  set: toggleSelectAll
 })
 </script>
 
@@ -345,15 +408,46 @@ const avgLength = computed(() => {
   padding: 24px;
 }
 
+.chapter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid oklch(25% 0.01 240);
+}
+
+.chapter-header :deep(.el-checkbox) {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.selected-count {
+  font-size: 14px;
+  color: oklch(70% 0.01 240);
+}
+
 .chapter-item {
   display: flex;
-  gap: 20px;
+  gap: 16px;
   padding: 20px;
   background: linear-gradient(135deg, oklch(15% 0.01 240) 0%, oklch(18% 0.01 240) 100%);
   border-radius: 12px;
   border: 1px solid oklch(25% 0.01 240);
   transition: all 0.3s ease;
   cursor: pointer;
+}
+
+.chapter-item.selected {
+  border-color: oklch(60% 0.25 250);
+  background: linear-gradient(135deg, oklch(18% 0.05 250) 0%, oklch(20% 0.05 250) 100%);
+}
+
+.chapter-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 4px;
 }
 
 .chapter-item:hover {
