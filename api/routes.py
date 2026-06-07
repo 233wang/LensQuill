@@ -80,10 +80,36 @@ async def stream_script_generator(input_data: Dict):
 
 
 @router.post("/generate")
-async def generate_script(input_data: Dict):
+async def generate_script_post(input_data: Dict):
     """
-    生成剧本 - 流式版本
+    生成剧本 - POST 版本
     逐章流式调用大模型，前端实时显示处理进度
+    """
+    return await generate_script_handler(input_data)
+
+
+@router.get("/generate")
+async def generate_script_get(chapters: str = None):
+    """
+    生成剧本 - GET 版本 (用于 EventSource)
+    从 query 参数获取 chapters (JSON 格式)
+    """
+    import json
+    if not chapters:
+        raise HTTPException(status_code=400, detail="章节列表不能为空")
+
+    try:
+        chapters_data = json.loads(chapters)
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="章节参数格式错误")
+
+    input_data = {"chapters": chapters_data}
+    return await generate_script_handler(input_data)
+
+
+async def generate_script_handler(input_data: Dict):
+    """
+    生成剧本的公共处理器
     """
     chapters = input_data.get("chapters", [])
 

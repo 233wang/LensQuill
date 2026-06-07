@@ -144,7 +144,14 @@ const handleStorageChange = (e: StorageEvent) => {
 // 连接 SSE 流式生成
 const connectSSE = () => {
   console.log('开始连接 SSE...')
-  const eventSource = new EventSource('/api/generate')
+
+  // 从 localStorage 获取 chapters 并编码为 URL 参数
+  const chaptersStr = localStorage.getItem('chapters')
+  const encodedChapters = encodeURIComponent(chaptersStr || '[]')
+  const sseUrl = `/api/generate?chapters=${encodedChapters}`
+
+  console.log('SSE URL:', sseUrl)
+  const eventSource = new EventSource(sseUrl)
 
   console.log('EventSource 创建成功:', eventSource)
 
