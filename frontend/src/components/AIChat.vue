@@ -78,12 +78,24 @@ const emit = defineEmits<{
   (e: 'addChapter', chapter: any): void
 }>()
 
+// 检查是否有进行中的生成
+const hasInProgressGeneration = computed(() => {
+  return (props.progressMessages && props.progressMessages.length > 0) ||
+         (props.scriptData && Object.keys(props.scriptData).length === 0)
+})
+
 const messages = ref<any[]>([
   {
     id: 1,
     role: 'assistant',
     author: 'AI 助手',
-    content: '您好！我是您的 AI 剧本打磨助手。当前没有正在生成的剧本。\n\n当您在首页点击"生成剧本"后，我会实时显示生成进度，每处理完一章会自动添加到 YAML 编辑器中。',
+    content: computed(() => {
+      if (hasInProgressGeneration.value) {
+        return '您好！我是您的 AI 剧本打磨助手。剧本正在生成中，我会实时显示生成进度。\n\n每处理完一章会自动添加到 YAML 编辑器中，您可以在编辑器中查看和修改生成的内容。'
+      } else {
+        return '您好！我是您的 AI 剧本打磨助手。\n\n当您在首页点击"生成剧本"后，我会实时显示生成进度，每处理完一章会自动添加到 YAML 编辑器中。'
+      }
+    }).value,
     timestamp: '刚刚'
   }
 ])
@@ -103,9 +115,10 @@ const processMessage = (msg: any) => {
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
-    addProgressMessage(`已完成：${msg.chapter.chapter_title || `第${msg.chapter_index}章`}`)
+    const chapterTitle = msg.chapter?.chapter_title || msg.chapter_title || `第${msg.chapter_index}章`
+    addProgressMessage(`已完成：${chapterTitle}`)
   } else if (msg.type === 'processing_chapter') {
-    addProgressMessage(`正在生成：${msg.chapter_title}`)
+    addProgressMessage(`正在生成：${msg.chapter_title || `第${msg.chapter_index}章`}`)
   } else if (msg.type === 'init') {
     addProgressMessage(`开始生成剧本，共 ${msg.total_chapters} 章`)
   } else if (msg.type === 'characters_loaded') {
@@ -188,37 +201,36 @@ const sendMessage = async () => {
   await nextTick()
   scrollToBottom()
 
-  // 调用后端 API 获取 AI 修改建议
+  // 模拟 AI 响应（实际应调用后端 API）
+  // TODO: 添加后端 AI 对话端点后，启用以下代码
   try {
-    const response = await generateScript([], { yaml: props.yamlContent, request: text })
+    // 模拟网络延迟
+    await new Promise(resolve => setTimeout(resolve, 1000))
 
-    // 模拟 AI 响应
-    setTimeout(() => {
-      const aiResponse = {
-        id: Date.now() + 1,
-        role: 'assistant',
-        author: 'AI 助手',
-        content: `我理解您的需求。关于"${text.substring(0, 20)}..."，我可以帮您优化。\n\n**修改建议：**\n根据您的要求，我建议对剧本进行以下调整：\n\n1. 增加角色情感描写\n2. 优化场景转换衔接\n3. 增强对话表现力\n\n您觉得这些建议如何？我可以继续调整。`,
-        timestamp: '刚刚'
-      }
-      messages.value.push(aiResponse)
-      loading.value = false
-      scrollToBottom()
-
-      // 消息进入动画
-      gsap.from('.message:last-child', {
-        y: 20,
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.out'
-      })
-    }, 1000)
-  } catch (error) {
     const aiResponse = {
       id: Date.now() + 1,
       role: 'assistant',
       author: 'AI 助手',
-      content: `抱歉，暂时无法处理您的请求。错误信息：${error}`,
+      content: `我理解您的需求。关于"${text.substring(0, 20)}..."，我可以帮您优化。\n\n**修改建议：**\n根据您的要求，我建议对剧本进行以下调整：\n\n1. 增加角色情感描写\n2. 优化场景转换衔接\n3. 增强对话表现力\n\n您觉得这些建议如何？我可以继续调整。`,
+      timestamp: '刚刚'
+    }
+    messages.value.push(aiResponse)
+    loading.value = false
+    scrollToBottom()
+
+    // 消息进入动画
+    gsap.from('.message:last-child', {
+      y: 20,
+      opacity: 0,
+      duration: 0.4,
+      ease: 'power2.out'
+    })
+  } catch (error: any) {
+    const aiResponse = {
+      id: Date.now() + 1,
+      role: 'assistant',
+      author: 'AI 助手',
+      content: `抱歉，暂时无法处理您的请求。错误信息：${error?.message || error}`,
       timestamp: '刚刚'
     }
     messages.value.push(aiResponse)
