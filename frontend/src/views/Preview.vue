@@ -318,7 +318,14 @@ const selectAll = computed({
     if (chapters.value.length === 0) return false
     return selectedChapters.value.length === chapters.value.length
   },
-  set: toggleSelectAll
+  set: (val: boolean) => {
+    if (val) {
+      selectedChapters.value = chapters.value.map(c => c.index)
+    } else {
+      selectedChapters.value = []
+    }
+    console.log('全选设置:', val, selectedChapters.value)
+  }
 })
 </script>
 
