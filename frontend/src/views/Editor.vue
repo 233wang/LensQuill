@@ -18,7 +18,27 @@
       <!-- 左侧 YAML 编辑器 -->
       <div class="editor-panel">
         <div class="panel-header">
-          <h3>YAML 编辑</h3>
+          <div class="header-left">
+            <h3>YAML 编辑</h3>
+            <div class="history-actions">
+              <el-button
+                size="small"
+                @click="handleUndo"
+                :disabled="historyIndex <= 0"
+                title="撤销 (Ctrl+Z)"
+              >
+                ←
+              </el-button>
+              <el-button
+                size="small"
+                @click="handleRedo"
+                :disabled="historyIndex >= historyStack.length - 1"
+                title="重做 (Ctrl+Y)"
+              >
+                →
+              </el-button>
+            </div>
+          </div>
         </div>
         <div class="editor-container">
           <textarea
@@ -58,6 +78,57 @@ const scriptData = ref<any>(null)
 const progressMessages = ref<any[]>([])
 const currentChapter = ref(0)
 
+// 撤销/重做功能
+const historyStack = ref<string[]>([])  // 历史记录栈
+const historyIndex = ref(-1)  // 当前历史记录索引
+const isUndoRedo = ref(false)  // 标记是否正在执行撤销/重做
+
+// 记录当前状态到历史
+const recordState = () => {
+  if (isUndoRedo.value) return
+  // 移除当前索引之后的所有记录
+  historyStack.value = historyStack.value.slice(0, historyIndex.value + 1)
+  historyStack.value.push(yamlContent.value)
+  historyIndex.value = historyStack.value.length - 1
+}
+
+// 撤销
+const handleUndo = () => {
+  if (historyIndex.value > 0) {
+    historyIndex.value--
+    isUndoRedo.value = true
+    yamlContent.value = historyStack.value[historyIndex.value]
+    // 更新 scriptData
+    try {
+      scriptData.value = JSON.parse(yamlContent.value)
+    } catch {
+      // 如果解析失败，保持当前 scriptData
+    }
+    isUndoRedo.value = false
+  }
+}
+
+// 重做
+const handleRedo = () => {
+  if (historyIndex.value < historyStack.value.length - 1) {
+    historyIndex.value++
+    isUndoRedo.value = true
+    yamlContent.value = historyStack.value[historyIndex.value]
+    // 更新 scriptData
+    try {
+      scriptData.value = JSON.parse(yamlContent.value)
+    } catch {
+      // 如果解析失败，保持当前 scriptData
+    }
+    isUndoRedo.value = false
+  }
+}
+
+// 监听 YAML 内容变化，记录历史
+watch(yamlContent, () => {
+  recordState()
+})
+
 // 加载脚本数据
 const loadScriptData = () => {
   const storedScript = localStorage.getItem('scriptData')
@@ -66,9 +137,18 @@ const loadScriptData = () => {
       const data = JSON.parse(storedScript)
       scriptData.value = data
       yamlContent.value = dumpYaml(data)
+      // 初始化历史记录栈
+      historyStack.value = [storedScript]
+      historyIndex.value = 0
     } catch {
       yamlContent.value = storedScript
+      historyStack.value = [storedScript]
+      historyIndex.value = 0
     }
+  } else {
+    // 初始化空的历史记录栈
+    historyStack.value = ['']
+    historyIndex.value = 0
   }
 }
 
@@ -393,10 +473,22 @@ const handleSave = async () => {
   color: oklch(95% 0.01 240);
 }
 
-.header-actions :deep(.el-button) {
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.history-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.history-actions :deep(.el-button) {
   padding: 6px 12px;
-  font-size: 13px;
+  font-size: 14px;
   border-radius: 6px;
+  min-width: 36px;
 }
 
 .editor-container {
