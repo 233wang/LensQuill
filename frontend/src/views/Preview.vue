@@ -248,12 +248,19 @@ const avgLength = computed(() => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
+  padding: 20px;
+  background: linear-gradient(135deg, oklch(20% 0.05 250) 0%, oklch(18% 0.01 240) 100%);
+  border-radius: 12px;
+  border: 1px solid oklch(25% 0.01 240);
 }
 
 .header h1 {
   font-size: 28px;
   font-weight: 700;
-  color: oklch(95% 0.01 240);
+  background: linear-gradient(135deg, oklch(95% 0.01 240) 0%, oklch(60% 0.25 250) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .actions {
@@ -263,6 +270,7 @@ const avgLength = computed(() => {
 
 .summary-card {
   margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .summary-grid {
@@ -306,10 +314,11 @@ const avgLength = computed(() => {
 }
 
 .chapters-card {
-  background-color: oklch(18% 0.01 240);
+  background: linear-gradient(180deg, oklch(18% 0.01 240) 0%, oklch(16% 0.01 240) 100%);
   border: 1px solid oklch(25% 0.01 240);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .chapter-list {
@@ -323,31 +332,34 @@ const avgLength = computed(() => {
   display: flex;
   gap: 20px;
   padding: 20px;
-  background-color: oklch(15% 0.01 240);
+  background: linear-gradient(135deg, oklch(15% 0.01 240) 0%, oklch(18% 0.01 240) 100%);
   border-radius: 12px;
   border: 1px solid oklch(25% 0.01 240);
-  transition: all 0.2s ease;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
 .chapter-item:hover {
-  background-color: oklch(20% 0.01 240);
-  border-color: oklch(35% 0.01 240);
+  background: linear-gradient(135deg, oklch(20% 0.01 240) 0%, oklch(22% 0.01 240) 100%);
+  border-color: oklch(60% 0.25 250);
   transform: translateX(4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chapter-index {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 64px;
+  height: 64px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, oklch(60% 0.25 250) 0%, oklch(75% 0.2 330) 100%);
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .index-number {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 700;
   color: white;
 }
@@ -360,9 +372,13 @@ const avgLength = computed(() => {
 }
 
 .chapter-title {
-  font-size: 18px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   color: oklch(95% 0.01 240);
+  background: linear-gradient(135deg, oklch(95% 0.01 240) 0%, oklch(60% 0.25 250) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .chapter-meta {
@@ -379,7 +395,10 @@ const avgLength = computed(() => {
   font-size: 14px;
   color: oklch(70% 0.01 240);
   line-height: 1.6;
-  opacity: 0.8;
+  opacity: 0.9;
+  padding: 12px;
+  background: oklch(12% 0.01 240);
+  border-radius: 8px;
 }
 
 .loading {
@@ -402,5 +421,15 @@ const avgLength = computed(() => {
 
 :deep(.el-card__body) {
   padding: 0;
+}
+
+:deep(.el-button) {
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, oklch(60% 0.25 250) 0%, oklch(55% 0.25 250) 100%);
+  border-color: oklch(60% 0.25 250);
 }
 </style>
