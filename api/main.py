@@ -18,6 +18,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# 导入路由
+from api.routes import router
+app.include_router(router)
+
 
 @app.get("/")
 async def root():
