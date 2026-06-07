@@ -236,11 +236,15 @@ const handleProcess = async () => {
       content = textContent.value
       filename = 'novel.txt'
     } else if (selectedFile.value) {
+      console.log('开始读取文件:', selectedFile.value.name)
       content = await readFileAsText(selectedFile.value)
       filename = selectedFile.value.name
+      console.log('文件内容前100字符:', content.substring(0, 100))
     }
 
+    console.log('开始解析章节...')
     const chapters = parseChapters(content)
+    console.log('解析结果:', chapters.length, '个章节')
 
     // 更新统计信息
     totalChapterCount.value = chapters.length
@@ -248,7 +252,7 @@ const handleProcess = async () => {
 
     // 不再限制至少3个章节，允许用户上传任何数量的章节
     if (chapters.length === 0) {
-      alert('未识别到任何章节，请检查文件格式')
+      alert('未识别到任何章节，请检查文件格式\n\n内容长度: ' + content.length + '\n内容预览: ' + content.substring(0, 200))
       processing.value = false
       return
     }
@@ -295,9 +299,71 @@ const parseChapters = (content: string): any[] => {
 const readFileAsText = (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
-    reader.onload = (e) => resolve(e.target?.result as string)
-    reader.onerror = (e) => reject(e)
-    reader.readAsText(file, 'utf-8')
+    reader.onload = (e) => {
+      const arrayBuffer = e.target?.result as ArrayBuffer
+      const bytes = new Uint8Array(arrayBuffer)
+
+      // 检测编码
+      let encoding = 'utf-8'
+
+      // 检查 BOM (Byte Order Mark)
+      if (bytes.length >= 3 &&
+          bytes[0] === 0xEF &&
+          bytes[1] === 0xBB &&
+          bytes[2] === 0xBF) {
+        encoding = 'utf-8'  // UTF-8 BOM
+      } else if (bytes.length >= 2 &&
+                 bytes[0] === 0xFF &&
+                 bytes[1] === 0xFE) {
+        encoding = 'utf-16-le'  // UTF-16 LE BOM
+      } else if (bytes.length >= 2 &&
+                 bytes[0] === 0xFE &&
+                 bytes[1] === 0xFF) {
+        encoding = 'utf-16-be'  // UTF-16 BE BOM
+      } else {
+        // 简单检测 GBK（使用 chardet-like 的简单方法）
+        // 检查是否存在 GBK 特有的字节模式
+        let gbkScore = 0
+        let utf8Score = 0
+
+        for (let i = 0; i < Math.min(bytes.length, 1000); i++) {
+          const byte = bytes[i]
+          // GBK 范围: 0x81-0xFE
+          if (byte >= 0x81 && byte <= 0xFE) {
+            gbkScore++
+          }
+          // UTF-8 多字节字符
+          if (byte >= 0xC0 && byte <= 0xFD) {
+            utf8Score++
+          }
+        }
+
+        // 如果 GBK 特征更明显，使用 GBK
+        if (gbkScore > utf8Score && gbkScore > 10) {
+          encoding = 'gbk'
+        }
+      }
+
+      console.log('检测到编码:', encoding)
+
+      // 使用正确编码读取
+      try {
+        const decoder = new TextDecoder(encoding)
+        const text = decoder.decode(bytes)
+        console.log('文件读取成功，内容长度:', text.length)
+        resolve(text)
+      } catch (err) {
+        console.error('解码失败:', err)
+        // 降级方案：尝试 utf-8 并忽略错误
+        const decoder = new TextDecoder('utf-8', { ignoreBOM: true })
+        resolve(decoder.decode(bytes))
+      }
+    }
+    reader.onerror = (e) => {
+      console.error('文件读取失败:', e)
+      reject(e)
+    }
+    reader.readAsArrayBuffer(file)
   })
 }
 </script>
