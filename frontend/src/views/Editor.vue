@@ -18,26 +18,24 @@
       <!-- 左侧 YAML 编辑器 -->
       <div class="editor-panel">
         <div class="panel-header">
-          <div class="header-left">
-            <h3>YAML 编辑</h3>
-            <div class="history-actions">
-              <el-button
-                size="small"
-                @click="handleUndo"
-                :disabled="historyIndex <= 0"
-                title="撤销 (Ctrl+Z)"
-              >
-                ←
-              </el-button>
-              <el-button
-                size="small"
-                @click="handleRedo"
-                :disabled="historyIndex >= historyStack.length - 1"
-                title="重做 (Ctrl+Y)"
-              >
-                →
-              </el-button>
-            </div>
+          <h3>YAML 编辑</h3>
+          <div class="history-actions">
+            <el-button
+              size="small"
+              @click="handleUndo"
+              :disabled="historyIndex <= 0"
+              title="撤销 (Ctrl+Z)"
+            >
+              ←
+            </el-button>
+            <el-button
+              size="small"
+              @click="handleRedo"
+              :disabled="historyIndex >= historyStack.length - 1"
+              title="重做 (Ctrl+Y)"
+            >
+              →
+            </el-button>
           </div>
         </div>
         <div class="editor-container">
@@ -96,11 +94,12 @@ const recordState = () => {
 const handleUndo = () => {
   if (historyIndex.value > 0) {
     historyIndex.value--
+    const prevContent = historyStack.value[historyIndex.value]
     isUndoRedo.value = true
-    yamlContent.value = historyStack.value[historyIndex.value]
+    yamlContent.value = prevContent
     // 更新 scriptData
     try {
-      scriptData.value = JSON.parse(yamlContent.value)
+      scriptData.value = JSON.parse(prevContent)
     } catch {
       // 如果解析失败，保持当前 scriptData
     }
@@ -112,11 +111,12 @@ const handleUndo = () => {
 const handleRedo = () => {
   if (historyIndex.value < historyStack.value.length - 1) {
     historyIndex.value++
+    const nextContent = historyStack.value[historyIndex.value]
     isUndoRedo.value = true
-    yamlContent.value = historyStack.value[historyIndex.value]
+    yamlContent.value = nextContent
     // 更新 scriptData
     try {
-      scriptData.value = JSON.parse(yamlContent.value)
+      scriptData.value = JSON.parse(nextContent)
     } catch {
       // 如果解析失败，保持当前 scriptData
     }
@@ -471,17 +471,6 @@ const handleSave = async () => {
   font-size: 16px;
   font-weight: 600;
   color: oklch(95% 0.01 240);
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.history-actions {
-  display: flex;
-  gap: 8px;
 }
 
 .history-actions :deep(.el-button) {
