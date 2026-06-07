@@ -88,7 +88,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
-import { generateScript } from '@/api/client'
+import { generateScriptStream } from '@/api/client'
 import { gsap } from 'gsap'
 
 const router = useRouter()
@@ -201,8 +201,8 @@ const handleGenerate = async () => {
       })
     }
 
-    // 调用后端 API
-    const response = await generateScript(chapterObjects, null)
+    // 调用后端流式 API
+    const response = await generateScriptStream(chapterObjects, null)
 
     // 恢复卡片动画
     if (card) {

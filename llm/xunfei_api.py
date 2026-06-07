@@ -105,6 +105,91 @@ class XunFeiAPI:
             print(f"API调用失败: {e}")
             return self._get_fallback_response(prompt)
 
+    def call_llm_stream(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        use_json_mode: bool = False,
+        max_tokens: int = 8192
+    ):
+        """
+        调用LLM生成文本（流式版本）
+
+        Args:
+            prompt: 提示词
+            temperature: 温度参数
+            use_json_mode: 是否启用 JSON Mode
+            max_tokens: 最大输出 tokens 数量
+
+        Yields:
+            str: 流式响应的文本片段
+        """
+        if not self.is_configured:
+            yield self._get_fallback_response(prompt)
+            return
+
+        # 构建请求体 - 兼容 OpenAI 格式
+        request_data = {
+            "model": self.model_id,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的剧本创作助手。你生成的内容必须是有效的JSON格式。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True  # 启用流式
+        }
+
+        # 如果启用 JSON Mode，添加额外配置
+        if use_json_mode:
+            request_data["extra_body"] = {
+                "response_format": {"type": "json_object"}
+            }
+
+        try:
+            response = requests.post(
+                self.api_url,
+                json=request_data,
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                },
+                timeout=120,
+                stream=True  # 启用流式响应
+            )
+
+            print(f"API响应状态码: {response.status_code}")
+
+            response.raise_for_status()
+
+            # 流式读取响应
+            full_content = ""
+            for line in response.iter_lines():
+                if line:
+                    # 解析 SSE 格式的数据
+                    line_str = line.decode('utf-8')
+                    if line_str.startswith('data:'):
+                        data_str = line_str[5:].strip()
+                        if data_str == '[DONE]':
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            if "choices" in data and len(data["choices"]) > 0:
+                                delta = data["choices"][0].get("delta", {})
+                                content = delta.get("content", "")
+                                if content:
+                                    full_content += content
+                                    yield content
+                        except json.JSONDecodeError:
+                            pass
+
+            # 返回完整的 JSON（处理可能的 Markdown 代码块）
+            yield self._extract_json(full_content)
+
+        except Exception as e:
+            print(f"API调用失败: {e}")
+            yield self._get_fallback_response(prompt)
+
     def analyze_novel(self, chapters: List[Dict[str, str]]) -> Dict:
         """
         分析小说内容
@@ -263,3 +348,81 @@ class XunFeiAPI:
         elif "场景" in prompt:
             return '[{"id": "scene_001", "title": "场景一", "location": "办公室", "time": "白天", "summary": "主要场景"}]'
         return "这是降级响应，实际内容应由LLM生成。"
+
+    async def call_llm_stream_async(
+        self,
+        prompt: str,
+        temperature: float = 0.7,
+        use_json_mode: bool = False,
+        max_tokens: int = 8192
+    ):
+        """
+        异步调用LLM生成文本（流式版本）
+
+        Args:
+            prompt: 提示词
+            temperature: 温度参数
+            use_json_mode: 是否启用 JSON Mode
+            max_tokens: 最大输出 tokens 数量
+
+        Yields:
+            str: 流式响应的文本片段
+        """
+        import asyncio
+        import aiohttp
+
+        if not self.is_configured:
+            yield self._get_fallback_response(prompt)
+            return
+
+        # 构建请求体
+        request_data = {
+            "model": self.model_id,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的剧本创作助手。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+            "stream": True
+        }
+
+        if use_json_mode:
+            request_data["extra_body"] = {
+                "response_format": {"type": "json_object"}
+            }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    self.api_url,
+                    json=request_data,
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=aiohttp.ClientTimeout(total=120)
+                ) as response:
+                    print(f"API响应状态码: {response.status}")
+
+                    async for line in response.content:
+                        if line:
+                            line_str = line.decode('utf-8')
+                            if line_str.startswith('data:'):
+                                data_str = line_str[5:].strip()
+                                if data_str == '[DONE]':
+                                    break
+                                try:
+                                    data = json.loads(data_str)
+                                    if "choices" in data and len(data["choices"]) > 0:
+                                        delta = data["choices"][0].get("delta", {})
+                                        content = delta.get("content", "")
+                                        if content:
+                                            yield content
+                                except (json.JSONDecodeError, UnicodeDecodeError):
+                                    pass
+
+        except Exception as e:
+            print(f"API调用失败: {e}")
+            yield self._get_fallback_response(prompt)
+

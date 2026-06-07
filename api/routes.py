@@ -1,9 +1,12 @@
 """API路由 - 剧本生成 API"""
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
+from fastapi.responses import StreamingResponse
 from typing import List, Dict, Optional
 from io import StringIO
 import chardet
+import json
+import asyncio
 
 router = APIRouter(prefix="/api", tags=["API"])
 
@@ -68,25 +71,21 @@ async def analyze_novel(chapters: List[Dict]):
     }
 
 
-@router.post("/generate")
-async def generate_script(chapters: List[Dict], analysis: Optional[Dict] = None):
+async def stream_script_generator(input_data: Dict):
     """
-    生成剧本
-
-    按章节整体生成剧本，每个章节包含完整的场景和分镜
+    流式生成剧本的异步生成器
 
     Args:
-        chapters: 章节列表，每个包含 title 和 content
-        analysis: 分析结果（可选，用于提供人物信息）
+        input_data: 包含 chapters 和 analysis 的请求体
 
-    Returns:
-        完整剧本对象
+    Yields:
+        str: SSE 格式的事件数据
     """
-    if not chapters:
-        raise HTTPException(status_code=400, detail="章节列表不能为空")
-
     from llm.xunfei_api import XunFeiAPI
-    from core.script_generator_v2 import ScriptGeneratorV2
+    from core.script_generator_streaming import StreamingScriptGenerator
+
+    chapters = input_data.get("chapters", [])
+    analysis = input_data.get("analysis")
 
     # 初始化 LLM API
     llm_api = XunFeiAPI()
@@ -94,16 +93,42 @@ async def generate_script(chapters: List[Dict], analysis: Optional[Dict] = None)
     # 获取人物列表（如果有）
     characters = analysis.get("characters", []) if analysis else []
 
-    # 创建剧本生成器
-    generator = ScriptGeneratorV2(llm_api=llm_api)
+    # 创建流式剧本生成器
+    generator = StreamingScriptGenerator(llm_api=llm_api)
 
-    # 生成剧本
-    script = generator.convert_to_script_format(chapters, characters)
+    async for event in generator.generate_script_stream(chapters, characters):
+        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+        # 添加小延迟，让前端有时间渲染
+        await asyncio.sleep(0.1)
 
-    return {
-        "status": "success",
-        "script": script
-    }
+
+@router.post("/generate")
+async def generate_script(input_data: Dict):
+    """
+    生成剧本（流式版本）
+
+    按章节整体生成剧本，每个章节包含完整的场景和分镜
+
+    Args:
+        input_data: 包含 chapters 和 analysis 的请求体
+
+    Returns:
+        SSE 流式响应
+    """
+    chapters = input_data.get("chapters", [])
+
+    if not chapters:
+        raise HTTPException(status_code=400, detail="章节列表不能为空")
+
+    # 返回流式响应
+    return StreamingResponse(
+        stream_script_generator(input_data),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 @router.post("/export")
