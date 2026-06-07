@@ -114,7 +114,8 @@ const processMessage = (msg: any) => {
 
   // 处理章节流式消息
   if (msg.type === 'chapter_streaming') {
-    addStreamingMessage(`正在生成 JSON...\n${msg.content.substring(Math.max(0, msg.content.length - 500))}`)
+    // 显示当前生成进度
+    addStreamingMessage(`正在生成第 ${msg.chapter_index} 章...\n\n${msg.content.substring(Math.max(0, msg.content.length - 300))}`)
   }
   // 处理进度消息
   else if (msg.type === 'chapter_complete') {
@@ -159,18 +160,40 @@ onMounted(() => {
   msgs.forEach(processMessage)
 })
 
-// 添加流式消息
+// 添加流式消息（打字机效果）
 const addStreamingMessage = (content: string) => {
+  // 先添加一个空消息占位
   const msg = {
     id: Date.now(),
     role: 'assistant',
     author: '模型输出',
-    content: content,
+    content: '',
     timestamp: '刚刚',
-    isStreaming: true
+    isStreaming: true,
+    fullContent: content  // 保存完整内容
   }
   messages.value.push(msg)
-  nextTick(() => scrollToBottom())
+
+  // 打字机效果：逐字显示
+  nextTick(() => {
+    let currentText = ''
+    const text = content
+    const element = document.querySelector('.message:last-child .message-body')
+    const speed = 30  // 打字速度（毫秒/字符）
+    let index = 0
+
+    const typeWriter = () => {
+      if (index < text.length) {
+        currentText += text.charAt(index)
+        msg.content = currentText  // 更新响应式数据
+        index++
+        scrollToBottom()
+        setTimeout(typeWriter, speed)
+      }
+    }
+
+    typeWriter()
+  })
 }
 
 // 添加进度消息
