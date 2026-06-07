@@ -92,6 +92,7 @@ const recordState = () => {
 
 // 撤销
 const handleUndo = () => {
+  console.log('撤销: historyIndex =', historyIndex.value, 'stack length =', historyStack.value.length)
   if (historyIndex.value > 0) {
     historyIndex.value--
     const prevContent = historyStack.value[historyIndex.value]
@@ -109,6 +110,7 @@ const handleUndo = () => {
 
 // 重做
 const handleRedo = () => {
+  console.log('重做: historyIndex =', historyIndex.value, 'stack length =', historyStack.value.length)
   if (historyIndex.value < historyStack.value.length - 1) {
     historyIndex.value++
     const nextContent = historyStack.value[historyIndex.value]
