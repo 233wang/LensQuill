@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateScript } from '@/api/client'
 import { gsap } from 'gsap'
@@ -137,43 +137,50 @@ const loadChapters = () => {
   }
 }
 
-// 初始化加载
-onMounted(() => {
-  loadChapters()
-})
+	// 初始化加载
+	onMounted(() => {
+		loadChapters()
+	})
 
-// 页面进入动画
-onMounted(() => {
-  gsap.from('.preview .header', {
-    y: -30,
-    opacity: 0,
-    duration: 0.6,
-    ease: 'power2.out'
-  })
+	// 页面进入动画
+	onMounted(() => {
+		// 确保章节卡片正确渲染后再执行动画
+		nextTick(() => {
+			gsap.from('.preview .header', {
+				y: -30,
+				opacity: 0,
+				duration: 0.6,
+				ease: 'power2.out'
+			})
 
-  gsap.from('.summary-card', {
-    y: 30,
-    opacity: 0,
-    duration: 0.6,
-    delay: 0.2,
-    ease: 'power2.out'
-  })
+			gsap.from('.summary-card', {
+				y: 30,
+				opacity: 0,
+				duration: 0.6,
+				delay: 0.2,
+				ease: 'power2.out'
+			})
 
-  gsap.from('.chapters-card', {
-    y: 30,
-    opacity: 0,
-    duration: 0.6,
-    delay: 0.4,
-    ease: 'power2.out'
-  })
-})
+			// 章节列表动画
+			const cards = document.querySelectorAll('.chapter-item')
+			cards.forEach((card, index) => {
+				gsap.from(card, {
+					y: 30,
+					opacity: 0,
+					duration: 0.5,
+					delay: 0.6 + index * 0.1,
+					ease: 'power2.out'
+				})
+			})
+		})
+	})
 
-// 页面离开清理
-onBeforeUnmount(() => {
-  gsap.killTweensOf('.preview .header')
-  gsap.killTweensOf('.summary-card')
-  gsap.killTweensOf('.chapters-card')
-})
+	// 页面离开清理
+	onBeforeUnmount(() => {
+		gsap.killTweensOf('.preview .header')
+		gsap.killTweensOf('.summary-card')
+		gsap.killTweensOf('.chapter-list .chapter-item')
+	})
 
 // 处理生成剧本按钮点击
 const handleGenerate = async () => {
