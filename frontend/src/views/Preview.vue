@@ -139,11 +139,14 @@ const loadChapters = () => {
 
 	// 初始化加载
 	onMounted(() => {
+		console.log('Preview.vue onMounted')
 		nextTick(() => {
 			loadChapters()
+			console.log('加载章节后，chapters数量:', chapters.value.length)
 
 			// 章节数据加载后，执行动画
 			nextTick(() => {
+				console.log('执行动画')
 				gsap.from('.preview .header', {
 					y: -30,
 					opacity: 0,
@@ -161,6 +164,7 @@ const loadChapters = () => {
 
 				// 章节列表动画
 				const cards = document.querySelectorAll('.chapter-item')
+				console.log('找到章节卡片数量:', cards.length)
 				cards.forEach((card, index) => {
 					gsap.from(card, {
 						y: 30,
