@@ -181,7 +181,6 @@ const handleGenerate = async () => {
     return
   }
 
-  // 显示加载动画
   generating.value = true
 
   try {
@@ -190,58 +189,32 @@ const handleGenerate = async () => {
       content: chap.content || '',
     }))
 
-    // 显示处理动画
-    const card = document.querySelector('.chapters-card')
-    if (card) {
-      gsap.to(card, {
-        opacity: 0.5,
-        scale: 0.98,
-        duration: 0.3,
-        ease: 'power2.inOut'
-      })
-    }
+    // 清除旧的脚本数据
+    localStorage.removeItem('scriptData')
 
-    // 调用后端 API
-    const response = await generateScript(chapterObjects, null)
+    // 立即跳转到编辑页，后端在后台流式生成
+    router.push('/editor')
 
-    // 恢复卡片动画
-    if (card) {
-      gsap.from(card, {
-        scale: 0.9,
-        opacity: 0,
-        duration: 0.5,
-        ease: 'back.out(1.7)'
-      })
-    }
-
-    if (response && response.status === 'success') {
-      // 保存剧本数据
-      const scriptData = response.script
-      localStorage.setItem('scriptData', JSON.stringify(scriptData))
-
-      // 成功动画
-      if (card) {
-        gsap.to(card, {
-          borderColor: 'oklch(50% 0.3 150)',
-          duration: 0.3,
-          yoyo: true,
-          repeat: 1,
-          onComplete: () => {
-            // 成功动画完成后再跳转
-            router.push('/editor')
-          }
-        })
-      } else {
-        router.push('/editor')
+    // 使用 fetch 发送 POST 请求触发流式生成
+    const chapterArray = JSON.parse(JSON.stringify(chapterObjects))
+    fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chapters: chapterArray, analysis: null })
+    }).then(response => {
+      if (response.ok) {
+        // 请求已发送，后端开始流式处理
+        console.log('生成请求已发送')
       }
-    } else {
-      alert('生成失败：' + (response?.message || '未知错误'))
-    }
+    }).catch(error => {
+      console.error('请求失败:', error)
+      generating.value = false
+    })
+
   } catch (error: any) {
     const errorMessage = error?.message || '生成失败，请重试'
     alert(errorMessage)
     console.error(error)
-  } finally {
     generating.value = false
   }
 }

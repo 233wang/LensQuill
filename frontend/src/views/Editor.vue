@@ -143,6 +143,50 @@ const addChapterToScript = (chapter: any) => {
 // 加载数据
 loadScriptData()
 
+// 监听 localStorage 变化（接收其他页面的更新）
+const handleStorageChange = (e: StorageEvent) => {
+  if (e.key === 'scriptData' && e.newValue) {
+    try {
+      const data = JSON.parse(e.newValue)
+      scriptData.value = data
+      yamlContent.value = dumpYaml(data)
+    } catch (e) {
+      console.error('解析 scriptData 失败:', e)
+    }
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('storage', handleStorageChange)
+
+  // 检查是否有进行中的生成
+  const chaptersStr = localStorage.getItem('chapters')
+  const scriptStr = localStorage.getItem('scriptData')
+  if (chaptersStr && !scriptStr) {
+    // 有章节但没有脚本，说明正在生成
+    progressMessages.value.push({
+      id: Date.now(),
+      type: 'init',
+      total_chapters: JSON.parse(chaptersStr).length,
+      message: '检测到正在生成的剧本，正在连接...',
+      timestamp: '刚刚'
+    })
+  }
+})
+
+  gsap.killTweensOf('.editor .header')
+})
+
+// 初始化 onMounted 动画
+onMounted(() => {
+  gsap.from('.editor .header', {
+    y: -30,
+    opacity: 0,
+    duration: 0.6,
+    ease: 'power2.out'
+  })
+})
+
 const handleBack = () => {
   router.push('/preview')
 }
