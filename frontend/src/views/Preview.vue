@@ -147,30 +147,32 @@ const loadChapters = () => {
 			// 章节数据加载后，执行动画
 			nextTick(() => {
 				console.log('执行动画')
+				// GSAP 动画结束后会自动保留最终状态，无需额外处理
 				gsap.from('.preview .header', {
 					y: -30,
 					opacity: 0,
-					duration: 0.6,
+					duration: 0.8,
 					ease: 'power2.out'
 				})
 
 				gsap.from('.summary-card', {
 					y: 30,
 					opacity: 0,
-					duration: 0.6,
-					delay: 0.2,
+					duration: 0.8,
+					delay: 0.3,
 					ease: 'power2.out'
 				})
 
-				// 章节列表动画
+				// 章节列表动画 - 先全部隐藏再显示
 				const cards = document.querySelectorAll('.chapter-item')
 				console.log('找到章节卡片数量:', cards.length)
+				gsap.set(cards, { opacity: 0, y: 30 }) // 初始状态
 				cards.forEach((card, index) => {
-					gsap.from(card, {
-						y: 30,
-						opacity: 0,
-						duration: 0.5,
-						delay: 0.6 + index * 0.1,
+					gsap.to(card, {
+						opacity: 1,
+						y: 0,
+						duration: 0.6,
+						delay: 0.5 + index * 0.1,
 						ease: 'power2.out'
 					})
 				})
