@@ -1,4 +1,4 @@
-"""API路由"""
+"""API路由 - 剧本生成 API"""
 
 from fastapi import APIRouter, UploadFile, File, HTTPException, Depends
 from typing import List, Dict, Optional
@@ -73,30 +73,32 @@ async def generate_script(chapters: List[Dict], analysis: Optional[Dict] = None)
     """
     生成剧本
 
-    将小说内容转换为剧本格式
+    按章节整体生成剧本，每个章节包含完整的场景和分镜
+
+    Args:
+        chapters: 章节列表，每个包含 title 和 content
+        analysis: 分析结果（可选，用于提供人物信息）
+
+    Returns:
+        完整剧本对象
     """
     if not chapters:
         raise HTTPException(status_code=400, detail="章节列表不能为空")
 
     from llm.xunfei_api import XunFeiAPI
-    from core.script_generator import ScriptGenerator
-    from core.novel_analyzer import NovelAnalyzer
+    from core.script_generator_v2 import ScriptGeneratorV2
 
     # 初始化 LLM API
     llm_api = XunFeiAPI()
 
-    # 如果没有提供分析结果，先进行分析
-    if not analysis:
-        analyzer = NovelAnalyzer(llm_api=llm_api)
-        analysis = {
-            "characters": analyzer.extract_characters(chapters),
-            "scenes": analyzer.extract_scenes(chapters),
-            "relationships": analyzer.analyze_relationships([]),
-            "key_events": analyzer.extract_key_events(chapters)
-        }
+    # 获取人物列表（如果有）
+    characters = analysis.get("characters", []) if analysis else []
 
-    generator = ScriptGenerator()
-    script = generator.convert_to_script_format(chapters, analysis)
+    # 创建剧本生成器
+    generator = ScriptGeneratorV2(llm_api=llm_api)
+
+    # 生成剧本
+    script = generator.convert_to_script_format(chapters, characters)
 
     return {
         "status": "success",

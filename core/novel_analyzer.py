@@ -30,6 +30,13 @@ class NovelAnalyzer:
         Returns:
             人物列表，每个元素为 dict，包含 id, name, description 等
         """
+        # 如果有 LLM API，使用 LLM 进行智能提取
+        if self.llm_api:
+            # 合并所有章节内容
+            all_content = "\n\n".join([f"{c['title']}\n{c['content']}" for c in chapters])
+            return self.llm_api.extract_characters(all_content)
+
+        # 降级：使用简单规则提取
         characters = []
         seen_names = set()
         character_id = 1
@@ -64,6 +71,13 @@ class NovelAnalyzer:
         Returns:
             场景列表，每个元素为 dict，包含 id, title, location, time 等
         """
+        # 如果有 LLM API，使用 LLM 进行智能提取
+        if self.llm_api:
+            # 合并所有章节内容
+            all_content = "\n\n".join([f"{c['title']}\n{c['content']}" for c in chapters])
+            return self.llm_api.extract_scenes(all_content)
+
+        # 降级：使用关键词匹配
         scenes = []
         scene_id = 1
 

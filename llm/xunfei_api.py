@@ -2,6 +2,7 @@
 
 import os
 import json
+import re
 import requests
 from typing import Dict, List, Optional
 from dotenv import load_dotenv
@@ -20,13 +21,38 @@ class XunFeiAPI:
         self.model_id = os.getenv("OPENAI_MODEL_ID", "qwen3.6-35b-a3b")
         self.is_configured = bool(self.api_key and self.api_url)
 
-    def call_llm(self, prompt: str, temperature: float = 0.7) -> str:
+    def _extract_json(self, text: str) -> str:
+        """
+        从文本中提取 JSON 对象
+
+        处理以下情况：
+        1. 纯 JSON
+        2. 包含 ```json ... ``` 代码块
+        3. 包含 ``` ... ``` 代码块
+        4. JSON 作为字符串在字典中
+        """
+        # 尝试查找 ```json ... ``` 块
+        json_match = re.search(r'```json\s*(.*?)\s*```', text, re.DOTALL)
+        if json_match:
+            return json_match.group(1)
+
+        # 尝试查找 ``` ... ``` 块
+        json_match = re.search(r'```\s*(.*?)\s*```', text, re.DOTALL)
+        if json_match:
+            return json_match.group(1)
+
+        # 返回原文本
+        return text
+
+    def call_llm(self, prompt: str, temperature: float = 0.7, use_json_mode: bool = False, max_tokens: int = 8192) -> str:
         """
         调用LLM生成文本
 
         Args:
             prompt: 提示词
             temperature: 温度参数
+            use_json_mode: 是否启用 JSON Mode
+            max_tokens: 最大输出 tokens 数量（默认 8192，满足高质量剧本生成需求）
 
         Returns:
             生成的文本
@@ -42,8 +68,14 @@ class XunFeiAPI:
                 {"role": "user", "content": prompt}
             ],
             "temperature": temperature,
-            "max_tokens": 2048
+            "max_tokens": max_tokens
         }
+
+        # 如果启用 JSON Mode，添加额外配置
+        if use_json_mode:
+            request_data["extra_body"] = {
+                "response_format": {"type": "json_object"}
+            }
 
         try:
             response = requests.post(
@@ -53,7 +85,7 @@ class XunFeiAPI:
                     "Authorization": f"Bearer {self.api_key}",
                     "Content-Type": "application/json"
                 },
-                timeout=60
+                timeout=120
             )
 
             print(f"API响应状态码: {response.status_code}")
@@ -63,7 +95,9 @@ class XunFeiAPI:
             result = response.json()
 
             if "choices" in result and len(result["choices"]) > 0:
-                return result["choices"][0]["message"]["content"]
+                content = result["choices"][0]["message"]["content"]
+                # 提取 JSON（处理可能的 Markdown 代码块）
+                return self._extract_json(content)
             else:
                 return self._get_fallback_response(prompt)
 
@@ -167,14 +201,23 @@ class XunFeiAPI:
     def _parse_characters_response(self, response: str) -> List[Dict[str, str]]:
         """解析人物响应"""
         try:
-            for line in response.split('\n'):
-                if '[' in line and ']' in line:
-                    start = line.find('[')
-                    end = line.rfind(']') + 1
-                    json_str = line[start:end]
-                    data = json.loads(json_str)
-                    if isinstance(data, list):
-                        return data
+            # 先尝试直接解析整个响应
+            data = json.loads(response)
+            if isinstance(data, list):
+                return data
+            # 如果是字典，尝试提取列表类型的字段
+            if isinstance(data, dict):
+                for key in ['characters', 'data', 'result']:
+                    if key in data and isinstance(data[key], list):
+                        return data[key]
+            # 查找第一个 [ 和最后一个 ]
+            start = response.find('[')
+            end = response.rfind(']') + 1
+            if start != -1 and end > start:
+                json_str = response[start:end]
+                data = json.loads(json_str)
+                if isinstance(data, list):
+                    return data
         except json.JSONDecodeError:
             pass
 
@@ -183,14 +226,23 @@ class XunFeiAPI:
     def _parse_scenes_response(self, response: str) -> List[Dict[str, str]]:
         """解析场景响应"""
         try:
-            for line in response.split('\n'):
-                if '[' in line and ']' in line:
-                    start = line.find('[')
-                    end = line.rfind(']') + 1
-                    json_str = line[start:end]
-                    data = json.loads(json_str)
-                    if isinstance(data, list):
-                        return data
+            # 先尝试直接解析整个响应
+            data = json.loads(response)
+            if isinstance(data, list):
+                return data
+            # 如果是字典，尝试提取列表类型的字段
+            if isinstance(data, dict):
+                for key in ['scenes', 'data', 'result']:
+                    if key in data and isinstance(data[key], list):
+                        return data[key]
+            # 查找第一个 [ 和最后一个 ]
+            start = response.find('[')
+            end = response.rfind(']') + 1
+            if start != -1 and end > start:
+                json_str = response[start:end]
+                data = json.loads(json_str)
+                if isinstance(data, list):
+                    return data
         except json.JSONDecodeError:
             pass
 

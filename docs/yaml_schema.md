@@ -1,191 +1,165 @@
-"""YAML Schema 文档
+# YAML Schema 说明
 
-剧本YAML格式定义
+## 设计理念
 
-本文件定义了AI小说转剧本工具输出的YAML格式结构。
-"""
+本工具采用**按章节整体生成**的策略，而非分别提取人物、场景后拼接。这样可以确保剧本的连贯性和可用性。
 
-# === YAML Schema 定义 ===
+### 设计原则
 
-"""
-剧本YAML结构：
+1. **章节完整性** - 每个章节的剧本都是完整的、可独立阅读的单元
+2. **结构化输出** - 大模型严格按 Schema 生成 JSON，再转换为 YAML
+3. **包含完整剧本要素** - 分镜、场景、对话、动作、特效等
 
-metadata:              # 元信息
-  version: string      # YAML格式版本
-  generated_by: string # 生成工具名称
-  generated_at: string # 生成时间 (ISO 8601格式)
-  source_files: array  # 源文件列表
-  llm_model: string    # 使用的LLM模型名称
+## YAML Schema 定义
 
-source:               # 来源信息
-  type: string        # 来源类型 (固定为 "novel")
-  title: string       # 原小说标题
-  author: string      # 原作者
-  chapters_count: int # 章节数量
-  chapters: array     # 章节标题列表
+```yaml
+script:
+  # 元信息
+  metadata:
+    version: "1.0"                    # Schema 版本
+    generated_by: "AI Tool v1.0"      # 生成工具
+    generated_at: "2026-06-07T12:00:00" # 生成时间
+    source_chapters: 3                # 源小说章节数
+    llm_model: "astron-code-latest"   # 使用的模型
 
-characters:           # 人物列表
-  - id: string        # 人物唯一标识
-    name: string      # 人物名称
-    role: string      # 角色类型 (protagonist/antagonist/side/other)
-    description: string # 人物描述
-    aliases: array    # 别名列表
-    relationships: array # 关系列表
+  # 全局人物列表
+  characters:
+    - id: "char_001"                  # 人物唯一ID
+      name: "白柳"                    # 人物姓名
+      role: "protagonist"             # 角色类型 (主角/配角/次要/群演)
+      description: "25岁，失业青年，对金钱有强烈渴望..." # 人物描述
+      attributes:                     # 人物属性 (可选)
+        intelligence: 89
+        courage: 50
+        luck: 0
 
-scenes:               # 场景列表
-  - id: string        # 场景唯一标识
-    title: string     # 场景标题
-    chapter_ref: string # 关联的章节标题
-    location: string  # 地点
-    time: string      # 时间
-    date: string      # 日期
-    characters: array # 出场人物ID列表
-    summary: string   # 场景摘要
-    beats: array      # 情节节点列表
-
-beats:                # 情节节点列表
-  - id: string        # 节点唯一标识
-    type: string      # 节点类型 (action/dialogue/narration/description)
-    content: string   # 内容文本
-    character: string # 关联的人物ID
-    speaker_name: string # 说话者名称
-    location_ref: string # 关联的地点ID
-    time_ref: string  # 关联的时间引用
-    notes: array      # 备注列表
-
-notes:                # 全局备注列表 (可选)
-  - id: string        # 备注唯一标识
-    type: string      # 备注类型 (editorial/author/ai)
-    content: string   # 备注内容
-    referenced_id: string # 关联的ID
-    author: string    # 备注作者 (ai/user)
-"""
-
-# === 字段类型说明 ===
-
-"""
-字段类型定义：
-
-必填字段：
-- metadata: object (必填)
-- source: object (必填)
-- characters: array (必填)
-- scenes: array (必填)
-- beats: array (必填)
-
-可选字段：
-- notes: array (可选)
-
-字符串类型字段：
-- version, generated_by, generated_at, source_files[], llm_model
-- type, title, author, chapters[]
-- id, name, role, description, aliases[], relationships[]
-- chapter_ref, location, time, date, characters[], summary
-- type, content, character, speaker_name, location_ref, time_ref, notes[]
-- type, referenced_id, author
-
-整数类型字段：
-- chapters_count
-
-数组类型字段：
-- source_files, chapters
-- characters, scenes, beats, notes
-
-枚举值字段：
-- role: "protagonist" | "antagonist" | "side" | "other"
-- type (beats): "action" | "dialogue" | "narration" | "description"
-- type (notes): "editorial" | "author" | "ai"
-"""
-
-# === 设计原因说明 ===
-
-"""
-1. 面向作者编辑
-   YAML相比纯文本更结构化，但仍然容易阅读和手动修改，适合小说作者快速编辑。
-
-2. 面向程序解析
-   稳定的字段结构便于后续接入：
-   - 前端可视化编辑器
-   - 剧本导出工具
-   - 分镜生成工具
-   - 人物关系图
-   - 剧情时间线
-   - 多轮AI修改
-
-3. 保留小说来源信息
-   通过 chapter_ref、source 等字段，可以追踪每个剧本场景来自哪一章小说，
-   方便作者对照原文修改。
-
-4. 支持剧本创作流程
-   将剧本拆分为 scenes、beats、dialogue、action、narration 等结构，
-   更符合剧本创作和影视化改编流程。
-
-5. 支持后续扩展
-   Schema允许未来扩展：
-   - 分镜字段
-   - 镜头语言
-   - 情绪标签
-   - 场景时长
-   - 人物弧光
-   - 剧集结构
-   - 多版本剧本管理
-"""
-
-# === 完整YAML示例 ===
-
-"""
-metadata:
-  version: "1.0"
-  generated_by: "AI Tool v1.0"
-  generated_at: "2026-06-05T12:00:00"
-  source_files:
-    - "examples/input_novel.txt"
-  llm_model: "qwen3.6-35b-a3b"
-
-source:
-  type: "novel"
-  title: "测试小说"
-  author: "未知作者"
-  chapters_count: 3
+  # 剧本主体 - 按章节组织
   chapters:
-    - "第一章 雨夜"
-    - "第二章 旧书店"
-    - "第三章 真相"
+    - chapter_index: 1                # 章节序号
+      chapter_title: "第1章 塞壬小镇" # 章节标题
+      source_content_length: 5234    # 源内容长度
 
-characters:
-  - id: "char_001"
-    name: "林舟"
-    role: "protagonist"
-    description: "故事主角，警惕性高"
-    aliases: []
-    relationships: []
+      # 本章节的场景列表
+      scenes:
+        - scene_index: 1             # 场景序号
+          scene_title: "醒来"        # 场景标题
+          location: "面包车后座"     # 场景地点
+          time: "白天"               # 场景时间
+          description: |             # 场景描述 (文学性描述)
+            白柳醒来，发现自己坐在一辆破旧的面包车后座上。车窗上滑落着不成股的水流，
+            鼻腔里萦绕着一丝淡淡的咸鱼腥味。他的面前飘浮着一个面板，上面写着【游戏须知】。
 
-scenes:
-  - id: "scene_001"
-    title: "雨夜相遇"
-    chapter_ref: "第一章 雨夜"
-    location: "狭窄的巷子"
-    time: "夜晚"
-    date: ""
-    characters:
-      - "char_001"
-    summary: "林舟在雨夜遇见神秘女子"
-    beats:
-      - id: "beat_001"
-        type: "action"
-        content: "林舟撑着伞，快步穿过狭窄的巷子。"
-        character: "char_001"
-        speaker_name: ""
-        location_ref: ""
-        time_ref: ""
-        notes: []
+          # 分镜列表 - 剧本的核心部分
+          shots:
+            - shot_index: 1          # 分镜序号
+              shot_type: "内景"       # 分镜类型 (内景/外景/切镜/闪回/淡入/淡出)
+              time_of_day: "白天"     # 白天/夜晚/黄昏/黎明
+              camera_direction: "中景"  # 镜头方向/景别
 
-beats: []
+              # 动作描述 - 叙述性文字
+              action: |
+                白柳皱起眉来，手指轻轻敲击着面板边缘。
 
-notes:
-  - id: "note_001"
-    type: "editorial"
-    content: "神秘女孩的身份需要在后续章节中揭示"
-    referenced_id: ""
-    author: "ai"
-"""
+              # 人物对话 - 对话部分
+              dialogue:
+                - character: "白柳"
+                  line: "这是哪里？我为什么在这里？这个面板又是什么东西？"
+                  action_description: "(自言自语)"
+
+              # 场景特效 - 特殊效果
+              effects:
+                - type: "面板显现"
+                  description: "面板上的文字依次显现"
+
+              # 音效
+              sound:
+                - type: "环境音"
+                  description: "细雨淅淅沥沥的声音"
+
+        - scene_index: 2
+          scene_title: "人物互动"
+          location: "面包车内部"
+          time: "白天"
+          description: |
+            露西转过头来，用热情的笑容打破了车内的沉默。
+
+          shots:
+            - shot_index: 1
+              shot_type: "中景"
+              time_of_day: "白天"
+              camera_direction: "平视"
+
+              dialogue:
+                - character: "露西"
+                  line: "白柳，嘿，我的小甜心，你终于醒了！"
+                  action_description: "(对着白柳挤眉弄眼)"
+
+    - chapter_index: 2
+      chapter_title: "第2章 塞壬小镇"
+      source_content_length: 4892
+      scenes:
+        # ... 第2章的场景
+
+# 输出说明
+output_notes: |
+  1. 每个章节独立生成，包含完整的场景和分镜
+  2. 分镜是剧本的基本单元，包含动作、对话、特效等要素
+  3. 场景按叙事顺序排列
+  4. 所有文本使用中文，保持文学性和剧本格式的平衡
+```
+
+## 生成流程
+
+```
+用户输入小说 (3+章节)
+    ↓
+按章节分割
+    ↓
+┌─────────────────────────────────────────┐
+│ 对每个章节调用大模型:                    │
+│                                         │
+│ "请将以下章节内容转换为剧本格式，      │
+│  严格遵循 YAML Schema，输出 JSON..."   │
+│                                         │
+└─────────────────────────────────────────┘
+    ↓
+大模型返回 JSON (结构化剧本数据)
+    ↓
+转换为 YAML 格式
+    ↓
+返回给前端
+```
+
+## 大模型 Prompt 模板
+
+```
+你是一个专业的剧本创作助手。
+
+【任务】将以下小说章节转换为结构化剧本格式。
+
+【要求】
+1. 保留原著的文学性和细节描写
+2. 将叙述性内容转换为剧本格式（动作、对话、场景描述）
+3. 合理划分场景和分镜
+4. 严格遵循以下 Schema:
+
+<schema>
+{YAML Schema 定义}
+</schema>
+
+【输出格式】
+请直接输出 JSON 格式，不要添加任何额外解释。
+
+【小说内容】
+{章节原文}
+```
+
+## 与旧 Schema 的区别
+
+| 对比项 | 旧 Schema | 新 Schema |
+|--------|-----------|-----------|
+| 组织方式 | 按类型扁平组织 | 按章节树状组织 |
+| 场景生成 | 分别提取后拼接 | 整体生成，保持连贯 |
+| 分镜内容 | 空洞的结构占位 | 完整的动作和对话 |
+| 可用性 | 需要大量人工编辑 | 可直接使用或微调 |
+| 大模型参与 | 部分环节 | 全程参与核心创作 |
