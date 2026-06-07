@@ -76,7 +76,9 @@ class StreamingScriptGenerator:
 
     async def _generate_chapter_stream(self, chapter: Dict[str, str], chapter_index: int):
         """流式生成单个章节，实时推送生成进度"""
+        print(f"开始生成第 {chapter_index} 章...")
         if not self.llm_api:
+            print("LLM API 未配置，使用降级处理")
             yield {"type": "chapter_complete", "chapter_index": chapter_index, "chapter": self._generate_fallback_chapter(chapter, chapter_index)}
             return
 
@@ -84,7 +86,9 @@ class StreamingScriptGenerator:
 
         # 收集流式输出
         full_content = ""
+        chunk_count = 0
         async for chunk in self._call_llm_stream_async(prompt):
+            chunk_count += 1
             full_content += chunk
             # 实时推送当前生成的文本（非完整 JSON）
             yield {
@@ -95,6 +99,8 @@ class StreamingScriptGenerator:
             }
             # 强制刷新，确保消息立即发送
             await asyncio.sleep(0.01)
+
+        print(f"第 {chapter_index} 章生成完成，共 {chunk_count} 个chunk，内容长度: {len(full_content)}")
 
         # 流式结束后，解析完整 JSON
         chapter_script = self._parse_chapter_response(full_content, chapter_index)
