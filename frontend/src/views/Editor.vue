@@ -3,7 +3,8 @@
     <div class="header">
       <h1>YAML 编辑器</h1>
       <div class="actions">
-        <el-button @click="handleBack">返回</el-button>
+        <el-button @click="handleBack">返回预览</el-button>
+        <el-button @click="handleBackHome" type="info">返回首页</el-button>
         <el-button @click="handleDownload" icon="Download">
           下载 YAML
         </el-button>
@@ -18,10 +19,6 @@
       <div class="editor-panel">
         <div class="panel-header">
           <h3>YAML 编辑</h3>
-          <div class="header-actions">
-            <el-button size="small" @click="handleBackPreview">返回预览</el-button>
-            <el-button size="small" @click="handleBackHome" type="info">返回首页</el-button>
-          </div>
         </div>
         <div class="editor-container">
           <textarea
