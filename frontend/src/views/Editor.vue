@@ -80,6 +80,7 @@ const currentChapter = ref(0)
 const historyStack = ref<string[]>([])  // 历史记录栈
 const historyIndex = ref(-1)  // 当前历史记录索引
 const isUndoRedo = ref(false)  // 标记是否正在执行撤销/重做
+let recordTimeout: number | null = null  // 防抖记录超时
 
 // 记录当前状态到历史
 const recordState = () => {
@@ -94,9 +95,11 @@ const recordState = () => {
 const handleUndo = () => {
   console.log('撤销: historyIndex =', historyIndex.value, 'stack length =', historyStack.value.length)
   if (historyIndex.value > 0) {
+    isUndoRedo.value = true
+
     historyIndex.value--
     const prevContent = historyStack.value[historyIndex.value]
-    isUndoRedo.value = true
+
     yamlContent.value = prevContent
     // 更新 scriptData
     try {
@@ -104,7 +107,16 @@ const handleUndo = () => {
     } catch {
       // 如果解析失败，保持当前 scriptData
     }
-    isUndoRedo.value = false
+
+    // 清除防抖定时器，防止记录撤销后的状态
+    if (recordTimeout) {
+      clearTimeout(recordTimeout)
+      recordTimeout = null
+    }
+
+    setTimeout(() => {
+      isUndoRedo.value = false
+    }, 0)
   }
 }
 
@@ -112,9 +124,11 @@ const handleUndo = () => {
 const handleRedo = () => {
   console.log('重做: historyIndex =', historyIndex.value, 'stack length =', historyStack.value.length)
   if (historyIndex.value < historyStack.value.length - 1) {
+    isUndoRedo.value = true
+
     historyIndex.value++
     const nextContent = historyStack.value[historyIndex.value]
-    isUndoRedo.value = true
+
     yamlContent.value = nextContent
     // 更新 scriptData
     try {
@@ -122,13 +136,30 @@ const handleRedo = () => {
     } catch {
       // 如果解析失败，保持当前 scriptData
     }
-    isUndoRedo.value = false
+
+    // 清除防抖定时器，防止记录重做后的状态
+    if (recordTimeout) {
+      clearTimeout(recordTimeout)
+      recordTimeout = null
+    }
+
+    setTimeout(() => {
+      isUndoRedo.value = false
+    }, 0)
   }
 }
 
 // 监听 YAML 内容变化，记录历史
 watch(yamlContent, () => {
-  recordState()
+  if (isUndoRedo.value) return
+
+  // 防抖记录，避免快速修改时记录过多历史
+  if (recordTimeout) {
+    clearTimeout(recordTimeout)
+  }
+  recordTimeout = window.setTimeout(() => {
+    recordState()
+  }, 100)
 })
 
 // 加载脚本数据
