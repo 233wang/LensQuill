@@ -135,6 +135,7 @@ const selectedFile = ref<File | null>(null)
 const processing = ref(false)
 const totalChapterCount = ref(0)
 const totalWords = ref(0)
+const fileContent = ref<string>('')  // 存储已读取的文件内容
 
 const textLength = computed(() => textContent.value.length)
 const estimatedChapters = computed(() => {
@@ -154,6 +155,7 @@ const handleFileChange = async (file: UploadFile) => {
   // 上传文件后立即解析并显示分析结果
   try {
     const content = await readFileAsText(file.raw)
+    fileContent.value = content  // 存储内容供后续使用
     const chapters = parseChapters(content)
     totalChapterCount.value = chapters.length
     totalWords.value = chapters.reduce((sum, c) => sum + c.length, 0)
@@ -246,9 +248,10 @@ const handleProcess = async () => {
       content = textContent.value
       filename = 'novel.txt'
     } else if (selectedFile.value) {
-      console.log('开始读取文件:', selectedFile.value.name)
-      content = await readFileAsText(selectedFile.value)
+      console.log('使用已读取的文件内容')
+      content = fileContent.value || ''
       filename = selectedFile.value.name
+      console.log('文件内容长度:', content.length)
       console.log('文件内容前100字符:', content.substring(0, 100))
     }
 
