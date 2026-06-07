@@ -114,15 +114,6 @@ const addProgressMessage = (content: string) => {
   nextTick(() => scrollToBottom())
 }
 
-const formatMessage = (content: string): string => {
-  // 简单的 Markdown 转换
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/\n/g, '<br>')
-}
-
 const sendMessage = async () => {
   const text = userInput.value.trim()
   if (!text || loading.value) return
