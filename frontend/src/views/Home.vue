@@ -274,7 +274,8 @@ const handleProcess = async () => {
     }
 
     console.log('保存到 localStorage...')
-    localStorage.setItem('novelContent', content)
+    // 只保存章节信息，不保存完整内容以避免 localStorage 超限
+    // 小说内容可以按需从原始文件重新读取或使用其他存储方式
     localStorage.setItem('filename', filename)
     localStorage.setItem('chapters', JSON.stringify(chapters))
 
