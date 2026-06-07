@@ -151,7 +151,8 @@ const loadChapters = () => {
 					y: -30,
 					opacity: 0,
 					duration: 0.6,
-					ease: 'power2.out'
+					ease: 'power2.out',
+					immediateRender: true
 				})
 
 				gsap.from('.summary-card', {
@@ -159,7 +160,8 @@ const loadChapters = () => {
 					opacity: 0,
 					duration: 0.6,
 					delay: 0.2,
-					ease: 'power2.out'
+					ease: 'power2.out',
+					immediateRender: true
 				})
 
 				// 章节列表动画
@@ -171,7 +173,9 @@ const loadChapters = () => {
 						opacity: 0,
 						duration: 0.5,
 						delay: 0.6 + index * 0.1,
-						ease: 'power2.out'
+						ease: 'power2.out',
+						immediateRender: true,
+						pause: false
 					})
 				})
 			})
