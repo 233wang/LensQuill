@@ -84,12 +84,18 @@ const userInput = ref('')
 const loading = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
 
-// 监听进度消息
+// 监听 SSE 消息
 watch(() => props.progressMessages, (newVal) => {
   if (newVal && newVal.length > 0) {
     const lastMsg = newVal[newVal.length - 1]
-    if (lastMsg.type === 'chapter_complete') {
-      addProgressMessage(`已完成：${lastMsg.chapter}`)
+
+    // 处理章节流式消息
+    if (lastMsg.type === 'chapter_streaming') {
+      addStreamingMessage(`正在生成 JSON...\n${lastMsg.content.substring(Math.max(0, lastMsg.content.length - 500))}`)
+    }
+    // 处理进度消息
+    else if (lastMsg.type === 'chapter_complete') {
+      addProgressMessage(`已完成：${lastMsg.chapter.chapter_title || `第${lastMsg.chapter_index}章`}`)
     } else if (lastMsg.type === 'processing_chapter') {
       addProgressMessage(`正在生成：${lastMsg.chapter_title}`)
     } else if (lastMsg.type === 'init') {
@@ -99,6 +105,33 @@ watch(() => props.progressMessages, (newVal) => {
     }
   }
 }, { immediate: true, deep: true })
+    }
+    // 处理进度消息
+    else if (lastMsg.type === 'chapter_complete') {
+      addProgressMessage(`已完成：${lastMsg.chapter.chapter_title || `第${lastMsg.chapter_index}章`}`)
+    } else if (lastMsg.type === 'processing_chapter') {
+      addProgressMessage(`正在生成：${lastMsg.chapter_title}`)
+    } else if (lastMsg.type === 'init') {
+      addProgressMessage(`开始生成剧本，共 ${lastMsg.total_chapters} 章`)
+    } else if (lastMsg.type === 'characters_loaded') {
+      addProgressMessage(`识别到 ${lastMsg.count} 个角色`)
+    }
+  }
+}, { deep: true })
+
+// 添加流式消息
+const addStreamingMessage = (content: string) => {
+  const msg = {
+    id: Date.now(),
+    role: 'assistant',
+    author: '模型输出',
+    content: content,
+    timestamp: '刚刚',
+    isStreaming: true
+  }
+  messages.value.push(msg)
+  nextTick(() => scrollToBottom())
+}
 
 // 添加进度消息
 const addProgressMessage = (content: string) => {
