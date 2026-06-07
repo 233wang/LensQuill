@@ -145,53 +145,89 @@ const handleStorageChange = (e: StorageEvent) => {
 const connectSSE = () => {
   console.log('开始连接 SSE...')
 
-  // 从 localStorage 获取 chapters 并编码为 URL 参数
+  // 从 localStorage 获取 chapters
   const chaptersStr = localStorage.getItem('chapters')
-  const encodedChapters = encodeURIComponent(chaptersStr || '[]')
-  const sseUrl = `/api/generate?chapters=${encodedChapters}`
+  const chapters = JSON.parse(chaptersStr || '[]')
 
-  console.log('SSE URL:', sseUrl)
-  const eventSource = new EventSource(sseUrl)
+  console.log('发送 POST 请求触发生成...')
 
-  console.log('EventSource 创建成功:', eventSource)
-
-  eventSource.onopen = () => {
-    console.log('SSE 连接已打开')
-  }
-
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data)
-      console.log('收到 SSE 消息:', data)
-
-      // 推送到 AI 对话框显示
-      progressMessages.value.push(data)
-
-      if (data.type === 'chapter_complete') {
-        // 将完成的章节添加到 YAML 编辑器
-        addChapterToScript(data.chapter)
-      }
-
-      if (data.type === 'complete') {
-        eventSource.close()
-        console.log('剧本生成完成')
-      }
-    } catch (e) {
-      console.error('Parse error:', e)
+  // 先发送 POST 请求触发生成
+  fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chapters, analysis: null })
+  }).then(response => {
+    if (!response.ok) {
+      throw new Error('生成请求失败')
     }
-  }
+    console.log('生成请求已发送，响应已开始...')
 
-  eventSource.onerror = (error) => {
-    console.error('EventSource error:', error)
-    console.error('SSE 连接错误，可能的原因：')
-    console.error('1. 后端服务未运行')
-    console.error('2. CORS 问题')
-    console.error('3. 后端 SSE 实现有问题')
-    eventSource.close()
-  }
+    // 检查内容类型
+    const contentType = response.headers.get('content-type')
+    console.log('Content-Type:', contentType)
 
-  // 返回 eventSource 供卸载时关闭
-  return eventSource
+    // 读取流式响应
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder()
+
+    let buffer = ''
+
+    function readStream(): Promise<void> {
+      return reader.read().then(({ done, value }) => {
+        if (done) {
+          console.log('流式响应完成')
+          // 处理剩余缓冲区
+          if (buffer.trim()) {
+            processSSEBuffer(buffer)
+          }
+          return
+        }
+
+        const chunk = decoder.decode(value, { stream: true })
+        console.log('收到原始数据:', chunk.substring(0, 100) + '...')
+
+        buffer += chunk
+
+        // 处理完整的 SSE 消息
+        processSSEBuffer(buffer)
+        buffer = '' // 简单处理，实际可能需要保留不完整消息
+
+        return readStream()
+      })
+    }
+
+    function processSSEBuffer(text: string) {
+      const lines = text.split('\n')
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          const dataStr = line.substring(6).trim()
+          if (dataStr) {
+            try {
+              const data = JSON.parse(dataStr)
+              console.log('解析 SSE 消息:', data.type)
+
+              // 推送到 AI 对话框显示
+              progressMessages.value.push(data)
+
+              if (data.type === 'chapter_complete') {
+                addChapterToScript(data.chapter)
+              }
+
+              if (data.type === 'complete') {
+                console.log('剧本生成完成')
+              }
+            } catch (e) {
+              console.error('Parse error:', e, 'data:', dataStr)
+            }
+          }
+        }
+      }
+    }
+
+    return readStream()
+  }).catch(error => {
+    console.error('流式生成错误:', error)
+  })
 }
 
 let sseSource: EventSource | null = null
@@ -209,7 +245,7 @@ onMounted(() => {
   if (chaptersStr && !scriptStr) {
     console.log('检测到进行中的生成，连接 SSE...')
     // 有章节但没有脚本，说明正在生成，连接 SSE
-    sseSource = connectSSE()
+    connectSSE()
   } else if (scriptStr) {
     console.log('脚本已生成，加载它...')
     // 脚本已生成完毕，加载它
@@ -235,9 +271,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)
-  if (sseSource) {
-    sseSource.close()
-  }
   gsap.killTweensOf('.editor .header')
 })
 
