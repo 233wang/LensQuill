@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import * as yaml from 'js-yaml'
@@ -57,21 +57,6 @@ const yamlContent = ref('')
 const scriptData = ref<any>(null)
 const progressMessages = ref<any[]>([])
 const currentChapter = ref(0)
-
-// 页面进入动画
-onMounted(() => {
-  gsap.from('.editor .header', {
-    y: -30,
-    opacity: 0,
-    duration: 0.6,
-    ease: 'power2.out'
-  })
-})
-
-// 页面离开清理
-onBeforeUnmount(() => {
-  gsap.killTweensOf('.editor .header')
-})
 
 // 加载脚本数据
 const loadScriptData = () => {
@@ -163,14 +148,8 @@ onMounted(() => {
   const chaptersStr = localStorage.getItem('chapters')
   const scriptStr = localStorage.getItem('scriptData')
   if (chaptersStr && !scriptStr) {
-    // 有章节但没有脚本，说明正在生成
-    progressMessages.value.push({
-      id: Date.now(),
-      type: 'init',
-      total_chapters: JSON.parse(chaptersStr).length,
-      message: '检测到正在生成的剧本，正在连接...',
-      timestamp: '刚刚'
-    })
+    // 有章节但没有脚本，说明正在生成，连接 SSE
+    connectSSE()
   }
 
   // 页面进入动画
@@ -181,6 +160,37 @@ onMounted(() => {
     ease: 'power2.out'
   })
 })
+
+// 连接 SSE 流式生成
+const connectSSE = () => {
+  const eventSource = new EventSource('/api/generate')
+
+  eventSource.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data)
+
+      // 推送到 AI 对话框显示
+      progressMessages.value.push(data)
+
+      if (data.type === 'chapter_complete') {
+        // 将完成的章节添加到 YAML 编辑器
+        addChapterToScript(data.chapter)
+      }
+
+      if (data.type === 'complete') {
+        eventSource.close()
+        console.log('剧本生成完成')
+      }
+    } catch (e) {
+      console.error('Parse error:', e)
+    }
+  }
+
+  eventSource.onerror = (error) => {
+    console.error('EventSource error:', error)
+    eventSource.close()
+  }
+}
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', handleStorageChange)

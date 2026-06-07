@@ -45,7 +45,6 @@ class StreamingScriptGenerator:
             characters = detected_characters
 
         # 3. 逐章处理
-        script_chapters = []
         for i, chapter in enumerate(chapters):
             chapter_index = i + 1
             chapter_title = chapter.get("title", f"第{chapter_index}章")
@@ -58,16 +57,9 @@ class StreamingScriptGenerator:
             }
 
             try:
-                # 使用大模型流式输出
-                chapter_script = await self._generate_chapter_stream(chapter, chapter_index)
-
-                yield {
-                    "type": "chapter_complete",
-                    "chapter_index": chapter_index,
-                    "chapter": chapter_script
-                }
-
-                script_chapters.append(chapter_script)
+                # 实时流式生成章节
+                async for event in self._generate_chapter_stream(chapter, chapter_index):
+                    yield event
 
             except Exception as e:
                 yield {
@@ -79,24 +71,14 @@ class StreamingScriptGenerator:
         # 4. 完成
         yield {
             "type": "complete",
-            "script": {
-                "metadata": {
-                    "version": "1.0",
-                    "generated_by": "AI Tool v4.0 (Streaming)",
-                    "generated_at": datetime.now().isoformat(),
-                    "source_chapters": len(chapters),
-                    "llm_model": self.llm_api.model_id if self.llm_api else "unknown"
-                },
-                "characters": characters,
-                "chapters": script_chapters
-            },
             "message": "剧本生成完成！"
         }
 
-    async def _generate_chapter_stream(self, chapter: Dict[str, str], chapter_index: int) -> Dict:
-        """流式生成单个章节"""
+    async def _generate_chapter_stream(self, chapter: Dict[str, str], chapter_index: int):
+        """流式生成单个章节，实时推送生成进度"""
         if not self.llm_api:
-            return self._generate_fallback_chapter(chapter, chapter_index)
+            yield {"type": "chapter_complete", "chapter_index": chapter_index, "chapter": self._generate_fallback_chapter(chapter, chapter_index)}
+            return
 
         prompt = self._build_chapter_prompt(chapter, chapter_index)
 
@@ -104,8 +86,22 @@ class StreamingScriptGenerator:
         full_content = ""
         async for chunk in self._call_llm_stream_async(prompt):
             full_content += chunk
+            # 实时推送当前生成的文本（非完整 JSON）
+            yield {
+                "type": "chapter_streaming",
+                "chapter_index": chapter_index,
+                "content": full_content,
+                "is_complete": False
+            }
 
-        return self._parse_chapter_response(full_content, chapter_index)
+        # 流式结束后，解析完整 JSON
+        chapter_script = self._parse_chapter_response(full_content, chapter_index)
+
+        yield {
+            "type": "chapter_complete",
+            "chapter_index": chapter_index,
+            "chapter": chapter_script
+        }
 
     async def _call_llm_stream_async(self, prompt: str):
         """异步调用大模型流式输出"""

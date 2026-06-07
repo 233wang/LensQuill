@@ -195,16 +195,51 @@ const handleGenerate = async () => {
     // 立即跳转到编辑页，后端在后台流式生成
     router.push('/editor')
 
-    // 使用 fetch 发送 POST 请求触发流式生成
+    // 使用 EventSource 接收 SSE 流
     const chapterArray = JSON.parse(JSON.stringify(chapterObjects))
+
+    // 保存 chapters 到 localStorage 供编辑页使用
+    localStorage.setItem('chapters', JSON.stringify(chapterObjects))
+
+    // 发送请求并连接 SSE
     fetch('/api/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chapters: chapterArray, analysis: null })
     }).then(response => {
       if (response.ok) {
-        // 请求已发送，后端开始流式处理
         console.log('生成请求已发送')
+
+        // 连接 SSE 流
+        const eventSource = new EventSource('/api/generate')
+
+        eventSource.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data)
+
+            // 推送到 AI 对话框
+            progressMessages.value.push(data)
+
+            if (data.type === 'chapter_complete') {
+              // 将完成的章节添加到 YAML
+              addChapterToScript(data.chapter)
+            }
+
+            if (data.type === 'complete') {
+              eventSource.close()
+              generating.value = false
+              console.log('剧本生成完成')
+            }
+          } catch (e) {
+            console.error('Parse error:', e)
+          }
+        }
+
+        eventSource.onerror = (error) => {
+          console.error('EventSource error:', error)
+          eventSource.close()
+          generating.value = false
+        }
       }
     }).catch(error => {
       console.error('请求失败:', error)
@@ -217,6 +252,13 @@ const handleGenerate = async () => {
     console.error(error)
     generating.value = false
   }
+}
+
+// 保存进度消息和添加章节的引用
+const progressMessages = ref<any[]>([])
+const addChapterToScript = (chapter: any) => {
+  // 这个函数在 Editor.vue 中定义，这里只是占位
+  console.log('添加章节:', chapter)
 }
 
 // 计算属性
