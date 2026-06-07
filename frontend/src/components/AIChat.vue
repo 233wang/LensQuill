@@ -14,7 +14,7 @@
             <span class="message-author">{{ msg.author }}</span>
             <span class="message-time">{{ msg.timestamp }}</span>
           </div>
-          <div class="message-body" v-html="formatMessage(msg.content)"></div>
+          <div class="message-body" :class="{ 'system-message': msg.isSystem }" v-html="formatMessage(msg.content, msg.isSystem)"></div>
         </div>
       </div>
       <div v-if="loading" class="message loading">
@@ -54,19 +54,21 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick, defineProps, defineEmits } from 'vue'
+import { ref, computed, onMounted, nextTick, defineProps, defineEmits, watch } from 'vue'
 import { gsap } from 'gsap'
 import { generateScript } from '@/api/client'
 
 interface Props {
   yamlContent: string
   scriptData?: any
+  progressMessages?: any[]
 }
 
 const props = defineProps<Props>()
 
 const emit = defineEmits<{
   (e: 'update:yamlContent', value: string): void
+  (e: 'addChapter', chapter: any): void
 }>()
 
 const messages = ref<any[]>([
@@ -74,13 +76,43 @@ const messages = ref<any[]>([
     id: 1,
     role: 'assistant',
     author: 'AI 助手',
-    content: '您好！我是您的 AI 剧本打磨助手。您可以告诉我需要修改或优化的地方，我会帮您调整剧本内容。',
+    content: '您好！我是您的 AI 剧本打磨助手。当前没有正在生成的剧本。\n\n当您在首页点击"生成剧本"后，我会实时显示生成进度，每处理完一章会自动添加到 YAML 编辑器中。',
     timestamp: '刚刚'
   }
 ])
 const userInput = ref('')
 const loading = ref(false)
 const chatContainer = ref<HTMLElement | null>(null)
+
+// 监听进度消息
+watch(() => props.progressMessages, (newVal) => {
+  if (newVal && newVal.length > 0) {
+    const lastMsg = newVal[newVal.length - 1]
+    if (lastMsg.type === 'chapter_complete') {
+      addProgressMessage(`已完成：${lastMsg.chapter}`)
+    } else if (lastMsg.type === 'processing_chapter') {
+      addProgressMessage(`正在生成：${lastMsg.chapter_title}`)
+    } else if (lastMsg.type === 'init') {
+      addProgressMessage(`开始生成剧本，共 ${lastMsg.total_chapters} 章`)
+    } else if (lastMsg.type === 'characters_loaded') {
+      addProgressMessage(`识别到 ${lastMsg.count} 个角色`)
+    }
+  }
+}, { immediate: true, deep: true })
+
+// 添加进度消息
+const addProgressMessage = (content: string) => {
+  const msg = {
+    id: Date.now(),
+    role: 'assistant',
+    author: '生成进度',
+    content: content,
+    timestamp: '刚刚',
+    isSystem: true
+  }
+  messages.value.push(msg)
+  nextTick(() => scrollToBottom())
+}
 
 const formatMessage = (content: string): string => {
   // 简单的 Markdown 转换
@@ -180,6 +212,20 @@ const clearChat = () => {
       timestamp: '刚刚'
     }
   ]
+}
+
+// 格式化消息，区分系统消息和普通消息
+const formatMessage = (content: string, isSystem?: boolean): string => {
+  if (isSystem) {
+    // 系统消息使用不同格式
+    return `<div style="color: oklch(60% 0.25 250); padding: 8px 12px; background: oklch(20% 0.01 240); border-radius: 8px; font-size: 13px;">${content}</div>`
+  }
+  // 普通消息
+  return content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\n/g, '<br>')
 }
 
 onMounted(() => {
@@ -297,6 +343,12 @@ onMounted(() => {
 
 .message.assistant strong {
   color: oklch(70% 0.25 250);
+}
+
+/* 系统消息样式 */
+.system-message {
+  margin: 8px 0;
+  font-size: 13px;
 }
 
 .typing-indicator {

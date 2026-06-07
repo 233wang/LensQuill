@@ -1,42 +1,33 @@
-"""剧本生成器 - 流式生成器，大模型流式输出 + 后端SSE转发"""
+"""流式剧本生成器 - 大模型流式输出 + 后端SSE转发"""
 
 from typing import List, Dict, Optional
 from datetime import datetime
 import json
 import asyncio
+import aiohttp
 
 
 class StreamingScriptGenerator:
-    """流式剧本生成器 - 按章节流式生成剧本"""
+    """流式剧本生成器 - 使用大模型流式输出"""
 
     def __init__(self, llm_api=None):
-        """
-        初始化流式剧本生成器
-
-        Args:
-            llm_api: LLM API 实例，用于智能生成
-        """
         self.llm_api = llm_api
 
     async def generate_script_stream(self, chapters: List[Dict[str, str]], characters: List[Dict] = None):
         """
         流式生成剧本，逐章返回结果
 
-        Args:
-            chapters: 章节列表
-            characters: 人物列表（可选）
-
         Yields:
             dict: SSE 格式的事件数据
         """
-        # 1. 发送初始化信息
+        # 1. 初始化
         yield {
             "type": "init",
             "message": "开始生成剧本...",
             "total_chapters": len(chapters)
         }
 
-        # 2. 发送人物信息（如果有）
+        # 2. 加载人物信息
         if characters:
             yield {
                 "type": "characters_loaded",
@@ -44,11 +35,7 @@ class StreamingScriptGenerator:
                 "characters": characters
             }
         else:
-            # 检测并加载人物
-            yield {
-                "type": "detecting_characters",
-                "message": "正在识别角色..."
-            }
+            # 使用关键词简单提取人物
             detected_characters = self._detect_characters(chapters)
             yield {
                 "type": "characters_loaded",
@@ -57,21 +44,22 @@ class StreamingScriptGenerator:
             }
             characters = detected_characters
 
-        # 3. 逐章生成剧本（使用大模型流式输出）
+        # 3. 逐章处理
         script_chapters = []
         for i, chapter in enumerate(chapters):
             chapter_index = i + 1
+            chapter_title = chapter.get("title", f"第{chapter_index}章")
 
             yield {
                 "type": "processing_chapter",
                 "chapter_index": chapter_index,
-                "chapter_title": chapter.get("title", f"第{chapter_index}章"),
+                "chapter_title": chapter_title,
                 "message": f"正在生成第 {chapter_index}/{len(chapters)} 章..."
             }
 
             try:
-                # 使用大模型流式输出生成当前章节
-                chapter_script = await self._generate_chapter_stream_async(chapter, chapter_index)
+                # 使用大模型流式输出
+                chapter_script = await self._generate_chapter_stream(chapter, chapter_index)
 
                 yield {
                     "type": "chapter_complete",
@@ -88,13 +76,13 @@ class StreamingScriptGenerator:
                     "error": str(e)
                 }
 
-        # 4. 发送完成信息
+        # 4. 完成
         yield {
             "type": "complete",
             "script": {
                 "metadata": {
                     "version": "1.0",
-                    "generated_by": "AI Tool v3.0 (Streaming)",
+                    "generated_by": "AI Tool v4.0 (Streaming)",
                     "generated_at": datetime.now().isoformat(),
                     "source_chapters": len(chapters),
                     "llm_model": self.llm_api.model_id if self.llm_api else "unknown"
@@ -105,34 +93,88 @@ class StreamingScriptGenerator:
             "message": "剧本生成完成！"
         }
 
-    async def _generate_chapter_stream_async(self, chapter: Dict[str, str], chapter_index: int) -> Dict:
-        """
-        异步流式生成单个章节的剧本
-        从大模型流式接收数据，最后组合成完整的 JSON
-        """
-        if self.llm_api:
-            prompt = self._build_chapter_prompt(chapter, chapter_index)
-
-            # 收集流式输出的所有片段
-            full_content = ""
-            async for chunk in self.llm_api.call_llm_stream_async(prompt, use_json_mode=True, max_tokens=8192):
-                full_content += chunk
-
-            return self._parse_chapter_response(full_content)
-        else:
+    async def _generate_chapter_stream(self, chapter: Dict[str, str], chapter_index: int) -> Dict:
+        """流式生成单个章节"""
+        if not self.llm_api:
             return self._generate_fallback_chapter(chapter, chapter_index)
 
+        prompt = self._build_chapter_prompt(chapter, chapter_index)
+
+        # 收集流式输出
+        full_content = ""
+        async for chunk in self._call_llm_stream_async(prompt):
+            full_content += chunk
+
+        return self._parse_chapter_response(full_content, chapter_index)
+
+    async def _call_llm_stream_async(self, prompt: str):
+        """异步调用大模型流式输出"""
+        import os
+        from dotenv import load_dotenv
+        load_dotenv()
+
+        api_url = os.getenv("OPENAI_API_URL", "https://maas-api.cn-huabei-1.xf-yun.com/v2/chat/completions")
+        api_key = os.getenv("OPENAI_API_KEY")
+        model_id = os.getenv("OPENAI_MODEL_ID", "astron-code-latest")
+
+        if not api_key:
+            yield "【LLM API 未配置】"
+            return
+
+        request_data = {
+            "model": model_id,
+            "messages": [
+                {"role": "system", "content": "你是一个专业的剧本创作助手。你生成的内容必须是有效的JSON格式。"},
+                {"role": "user", "content": prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 8192,
+            "stream": True,
+            "extra_body": {
+                "response_format": {"type": "json_object"}
+            }
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    api_url,
+                    json=request_data,
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json"
+                    },
+                    timeout=aiohttp.ClientTimeout(total=120)
+                ) as response:
+                    async for line in response.content:
+                        if line:
+                            line_str = line.decode('utf-8')
+                            if line_str.startswith('data:'):
+                                data_str = line_str[5:].strip()
+                                if data_str == '[DONE]':
+                                    break
+                                try:
+                                    data = json.loads(data_str)
+                                    if "choices" in data and len(data["choices"]) > 0:
+                                        delta = data["choices"][0].get("delta", {})
+                                        content = delta.get("content", "")
+                                        if content:
+                                            yield content
+                                except (json.JSONDecodeError, UnicodeDecodeError):
+                                    pass
+        except Exception as e:
+            print(f"API调用失败: {e}")
+            yield f"【错误: {str(e)}】"
+
     def _detect_characters(self, chapters: List[Dict[str, str]]) -> List[Dict]:
-        """
-        简单的人物检测（降级方案）
-        """
+        """简单人物检测"""
+        import re
         seen_names = set()
         characters = []
         char_id = 1
 
         for chapter in chapters:
             content = chapter.get("content", "")
-            import re
             words = re.findall(r'[一-龥]{2,3}(?:先生|小姐|女士|老师|同学|医生|警察|老板)', content)
             for name in words:
                 clean_name = name.rstrip('先生小姐女士老师同学医生警察老板')
@@ -151,7 +193,7 @@ class StreamingScriptGenerator:
         return characters
 
     def _build_chapter_prompt(self, chapter: Dict[str, str], chapter_index: int) -> str:
-        """构建章节剧本生成提示词"""
+        """构建提示词"""
         return f"""你是一个专业的剧本创作助手。
 
 【任务】将以下小说章节转换为结构化剧本格式。
@@ -201,17 +243,18 @@ class StreamingScriptGenerator:
 {chapter['content']}
 """
 
-    def _parse_chapter_response(self, response: str) -> Dict:
-        """解析章节响应"""
+    def _parse_chapter_response(self, response: str, chapter_index: int) -> Dict:
+        """解析响应"""
         try:
             data = json.loads(response)
+            data["chapter_index"] = chapter_index
             return data
         except json.JSONDecodeError as e:
             print(f"解析失败: {e}")
-            return self._generate_fallback_chapter({}, 1)
+            return self._generate_fallback_chapter({}, chapter_index)
 
     def _generate_fallback_chapter(self, chapter: Dict[str, str], chapter_index: int) -> Dict:
-        """生成降级章节剧本"""
+        """降级处理"""
         return {
             "chapter_index": chapter_index,
             "chapter_title": chapter.get("title", f"第{chapter_index}章"),

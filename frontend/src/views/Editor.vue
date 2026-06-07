@@ -18,13 +18,13 @@
       <div class="editor-panel">
         <div class="panel-header">
           <h3>YAML 编辑</h3>
-          <span class="panel-hint">可手动编辑 YAML 内容</span>
+          <span class="panel-hint">实时显示生成进度</span>
         </div>
         <div class="editor-container">
           <textarea
             v-model="yamlContent"
             class="editor-textarea"
-            placeholder="YAML 内容将在此处显示"
+            placeholder="YAML 内容将在此处显示..."
             spellcheck="false"
           />
         </div>
@@ -32,7 +32,12 @@
 
       <!-- 右侧 AI 对话面板 -->
       <div class="chat-panel">
-        <AIChat v-model:yaml-content="yamlContent" :script-data="scriptData" />
+        <AIChat
+          v-model:yaml-content="yamlContent"
+          :script-data="scriptData"
+          :progress-messages="progressMessages"
+          @add-chapter="addChapterToScript"
+        />
       </div>
     </div>
   </div>
@@ -45,10 +50,13 @@ import { ElMessage } from 'element-plus'
 import * as yaml from 'js-yaml'
 import { gsap } from 'gsap'
 import AIChat from '@/components/AIChat.vue'
+import { generateScript } from '@/api/client'
 
 const router = useRouter()
 const yamlContent = ref('')
 const scriptData = ref<any>(null)
+const progressMessages = ref<any[]>([])
+const currentChapter = ref(0)
 
 // 页面进入动画
 onMounted(() => {
@@ -88,13 +96,52 @@ const dumpYaml = (data: any): string => {
   }
 }
 
+// 追加章节到脚本
+const addChapterToScript = (chapter: any) => {
+  currentChapter.value++
+
+  // 更新进度消息
+  progressMessages.value.push({
+    id: Date.now(),
+    type: 'chapter_complete',
+    chapter: chapter.chapter_title || `第${currentChapter.value}章`,
+    timestamp: '刚刚'
+  })
+
+  // 如果 scriptData 为空，创建新脚本
+  if (!scriptData.value) {
+    scriptData.value = {
+      metadata: {
+        version: "1.0",
+        generated_by: "AI Tool v4.0",
+        generated_at: new Date().toISOString(),
+        source_chapters: 0,
+        llm_model: "astron-code-latest"
+      },
+      characters: [],
+      chapters: []
+    }
+  }
+
+  // 添加章节
+  scriptData.value.chapters.push(chapter)
+  scriptData.value.metadata.source_chapters = scriptData.value.chapters.length
+
+  // 更新 YAML 内容
+  yamlContent.value = dumpYaml(scriptData.value)
+
+  // 保存到 localStorage
+  localStorage.setItem('scriptData', yamlContent.value)
+
+  // 滚动编辑器到底部
+  const textarea = document.querySelector('.editor-textarea') as HTMLTextAreaElement
+  if (textarea) {
+    textarea.scrollTop = textarea.scrollHeight
+  }
+}
+
 // 加载数据
 loadScriptData()
-
-// 监听 YAML 内容变化
-watch(yamlContent, (newVal) => {
-  localStorage.setItem('scriptData', newVal)
-})
 
 const handleBack = () => {
   router.push('/preview')

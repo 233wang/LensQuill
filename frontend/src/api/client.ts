@@ -39,77 +39,9 @@ export const uploadText = (content: string, format = 'text', filename = '') =>
 export const analyzeNovel = (chapters: any[]) =>
   apiClient.post('/analyze', chapters)
 
-// 生成剧本（流式）
-export const generateScriptStream = (
-  chapters: any[],
-  analysis?: any,
-  onMessage?: (event: any) => void,
-  onError?: (error: Error) => void
-) => {
-  return new Promise((resolve, reject) => {
-    // 使用 POST 请求发送数据，SSE 接收
-    const body = { chapters, analysis }
-
-    fetch('/api/generate', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body)
-    })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('请求失败')
-        }
-
-        // 检查是否是 SSE 响应
-        const contentType = response.headers.get('content-type')
-        if (!contentType?.includes('text/event-stream')) {
-          throw new Error('不是流式响应')
-        }
-
-        // 使用 EventSource 接收流式数据
-        const eventSource = new EventSource(response.url)
-
-        const results: any[] = []
-        let fullScript: any = null
-
-        eventSource.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data)
-            results.push(data)
-
-            if (data.type === 'complete' && data.script) {
-              fullScript = data.script
-              eventSource.close()
-              resolve({ status: 'success', script: fullScript, events: results })
-            }
-
-            if (onMessage) {
-              onMessage(data)
-            }
-          } catch (e) {
-            console.error('Event source parse error:', e)
-          }
-        }
-
-        eventSource.onerror = (error) => {
-          console.error('Event source error:', error)
-          eventSource.close()
-          reject(new Error('连接错误或超时'))
-        }
-
-        // 设置超时
-        setTimeout(() => {
-          eventSource.close()
-          reject(new Error('请求超时'))
-        }, 120000) // 2分钟超时
-      })
-      .catch(error => {
-        reject(error)
-      })
-  })
-}
+// 生成剧本 - 按章节分别生成，避免超时
+export const generateScript = (chapters: any[], analysis?: any) =>
+  apiClient.post('/generate', { chapters, analysis })
 
 // 导出 YAML
 export const exportToYaml = (script: any) =>
