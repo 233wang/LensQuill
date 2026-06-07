@@ -66,6 +66,13 @@ interface Props {
 
 const props = defineProps<Props>()
 
+// 调试日志
+console.log('AIChat.vue received props:', {
+  yamlContentLength: props.yamlContent?.length || 0,
+  scriptData: props.scriptData ? '存在' : '不存在',
+  progressMessages: props.progressMessages || '未定义'
+})
+
 const emit = defineEmits<{
   (e: 'update:yamlContent', value: string): void
   (e: 'addChapter', chapter: any): void

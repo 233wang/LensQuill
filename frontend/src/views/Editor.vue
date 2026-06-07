@@ -143,7 +143,14 @@ const handleStorageChange = (e: StorageEvent) => {
 
 // 连接 SSE 流式生成
 const connectSSE = () => {
+  console.log('开始连接 SSE...')
   const eventSource = new EventSource('/api/generate')
+
+  console.log('EventSource 创建成功:', eventSource)
+
+  eventSource.onopen = () => {
+    console.log('SSE 连接已打开')
+  }
 
   eventSource.onmessage = (event) => {
     try {
@@ -169,6 +176,10 @@ const connectSSE = () => {
 
   eventSource.onerror = (error) => {
     console.error('EventSource error:', error)
+    console.error('SSE 连接错误，可能的原因：')
+    console.error('1. 后端服务未运行')
+    console.error('2. CORS 问题')
+    console.error('3. 后端 SSE 实现有问题')
     eventSource.close()
   }
 
@@ -184,10 +195,16 @@ onMounted(() => {
   // 检查是否有进行中的生成
   const chaptersStr = localStorage.getItem('chapters')
   const scriptStr = localStorage.getItem('scriptData')
+  console.log('Editor.vue onMounted:')
+  console.log('  chaptersStr:', chaptersStr ? '存在' : '不存在')
+  console.log('  scriptStr:', scriptStr ? '存在' : '不存在')
+
   if (chaptersStr && !scriptStr) {
+    console.log('检测到进行中的生成，连接 SSE...')
     // 有章节但没有脚本，说明正在生成，连接 SSE
     sseSource = connectSSE()
   } else if (scriptStr) {
+    console.log('脚本已生成，加载它...')
     // 脚本已生成完毕，加载它
     try {
       scriptData.value = JSON.parse(scriptStr)
@@ -196,6 +213,8 @@ onMounted(() => {
       yamlContent.value = scriptStr
       scriptData.value = null
     }
+  } else {
+    console.log('没有进行中的生成，也没有完成的脚本')
   }
 
   // 页面进入动画
