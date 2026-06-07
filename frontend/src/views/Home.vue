@@ -149,8 +149,18 @@ const canSubmit = computed(() => {
   return selectedFile.value !== null
 })
 
-const handleFileChange = (file: UploadFile) => {
+const handleFileChange = async (file: UploadFile) => {
   selectedFile.value = file.raw
+  // 上传文件后立即解析并显示分析结果
+  try {
+    const content = await readFileAsText(file.raw)
+    const chapters = parseChapters(content)
+    totalChapterCount.value = chapters.length
+    totalWords.value = chapters.reduce((sum, c) => sum + c.length, 0)
+    console.log('文件解析完成:', chapters.length, '个章节, 总字数:', totalWords.value)
+  } catch (error) {
+    console.error('文件解析失败:', error)
+  }
 }
 
 const formatFileSize = (size: number): string => {
