@@ -241,6 +241,7 @@ const handleProcess = async () => {
 
   processing.value = true
   try {
+    console.log('handleProcess 开始')
     let content = ''
     let filename = ''
 
@@ -248,11 +249,13 @@ const handleProcess = async () => {
       content = textContent.value
       filename = 'novel.txt'
     } else if (selectedFile.value) {
-      console.log('使用已读取的文件内容')
+      console.log('使用已读取的文件内容, fileContent:', fileContent.value)
       content = fileContent.value || ''
       filename = selectedFile.value.name
       console.log('文件内容长度:', content.length)
       console.log('文件内容前100字符:', content.substring(0, 100))
+    } else {
+      console.log('未选择文件')
     }
 
     console.log('开始解析章节...')
@@ -270,16 +273,21 @@ const handleProcess = async () => {
       return
     }
 
+    console.log('保存到 localStorage...')
     localStorage.setItem('novelContent', content)
     localStorage.setItem('filename', filename)
     localStorage.setItem('chapters', JSON.stringify(chapters))
 
+    console.log('跳转到 /preview...')
     router.push('/preview')
-  } catch (error) {
-    alert('处理失败，请重试')
-    console.error(error)
+    console.log('跳转完成')
+  } catch (error: any) {
+    console.error('处理过程出错:', error)
+    console.error('错误堆栈:', error.stack)
+    alert('处理失败，请重试\n\n错误: ' + (error?.message || error))
   } finally {
     processing.value = false
+    console.log('handleProcess 结束')
   }
 }
 
